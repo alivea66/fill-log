@@ -234,11 +234,11 @@ textarea{min-height:70px;resize:vertical}
 .ring svg{width:84px;height:84px;display:block}
 .ring .track{fill:none;stroke:var(--g-glass);stroke-width:10}
 .ring .rim{fill:none;stroke:var(--g-rim);stroke-width:1}
-.ring .arc{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 45%,transparent))}
-.ring .shine{fill:none;stroke:rgba(255,255,255,.5);stroke-width:2.5;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+.ring .shine{fill:none;stroke:rgba(255,255,255,.5);stroke-width:2.5;stroke-linecap:round}
 .ring .bead-tint{fill:color-mix(in srgb,var(--c) 35%,transparent)}
 .ring .bead{fill:url(#fl-bead);stroke:rgba(255,255,255,.8);stroke-width:1.2}
-.ring .arc{fill:none;stroke:color-mix(in srgb,var(--c) 88%,transparent);stroke-width:10;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dasharray .5s ease}
+.ring .arc{fill:none;stroke:color-mix(in srgb,var(--c) 88%,transparent);stroke-width:10;stroke-linecap:round}
+.ring .glow{fill:none;stroke:var(--c);stroke-width:15;stroke-linecap:round;opacity:.16}
 .ring .val{fill:var(--ink);font-family:var(--display);font-weight:700;font-size:20px}
 .ring .unit{fill:var(--muted);font-family:var(--body);font-size:10px}
 .ring strong{color:var(--ink);font-size:13px;font-weight:600}
@@ -759,8 +759,11 @@ function ringSVG(frac,center,unit,c,label){
   return `<svg viewBox="-4 -4 92 92" role="img" aria-label="${esc(label)}" style="--c:${c}">
     <circle class="track" cx="42" cy="42" r="${r}"/>
     <circle class="rim" cx="42" cy="42" r="${r+5}"/><circle class="rim" cx="42" cy="42" r="${r-5}"/>
-    ${f>0?`<circle class="arc" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>
-    <circle class="shine" cx="42" cy="42" r="${rs}" stroke-dasharray="${Math.max(0,f*Cs-6).toFixed(1)} ${Cs.toFixed(1)}" stroke-dashoffset="-3"/>
+    ${f>0?`<g transform="rotate(-90 42 42)">
+      <circle class="glow" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>
+      <circle class="arc" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>
+      <circle class="shine" cx="42" cy="42" r="${rs}" stroke-dasharray="${Math.max(0,f*Cs-6).toFixed(1)} ${Cs.toFixed(1)}" stroke-dashoffset="-3"/>
+    </g>
     <circle class="bead-tint" cx="${bx}" cy="${by}" r="6.5"/><circle class="bead" cx="${bx}" cy="${by}" r="6.5"/>`:""}
     <text class="val" x="42" y="${unit?44:48}" text-anchor="middle"${String(center).length>3?' style="font-size:16px"':""}>${center}</text>${unit?`<text class="unit" x="42" y="58" text-anchor="middle">${unit}</text>`:""}</svg>`;
 }
