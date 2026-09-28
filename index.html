@@ -42,6 +42,57 @@
 .toast.err{background:var(--bad)}
 .btn.saved{background:var(--good)!important;border-color:var(--good)!important;color:var(--on-accent)!important}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* Rating gauge */
+.rate-head label{font-weight:600}
+.rate-head .rv{display:flex;align-items:center;gap:8px}
+.clear{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:0;cursor:pointer}
+.gauge{--c:var(--line);--fill:0px;position:relative}
+.gauge input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:34px;margin:0;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer}
+.gauge input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:17px}
+/* Liquid-glass track: frosted tube, tinted glass fill, specular highlight on top */
+.gauge{--glass:color-mix(in srgb,var(--chip) 65%,transparent);--shine:rgba(255,255,255,.55);--rim:rgba(0,0,0,.06)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .gauge{--shine:rgba(255,255,255,.3);--rim:rgba(255,255,255,.14)}}
+:root[data-theme="dark"] .gauge{--shine:rgba(255,255,255,.3);--rim:rgba(255,255,255,.14)}
+.gauge input[type=range]::-webkit-slider-runnable-track{height:16px;border-radius:8px;
+  background:
+    linear-gradient(to bottom,var(--shine),rgba(255,255,255,0) 55%),
+    linear-gradient(to right,color-mix(in srgb,var(--c) 82%,transparent) 0,color-mix(in srgb,var(--c) 82%,transparent) var(--fill),transparent var(--fill)),
+    var(--glass);
+  box-shadow:inset 0 0 0 1px var(--rim),inset 0 2px 4px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.08)}
+.gauge input[type=range]::-moz-range-track{height:16px;border-radius:8px;
+  background:
+    linear-gradient(to bottom,var(--shine),rgba(255,255,255,0) 55%),
+    linear-gradient(to right,color-mix(in srgb,var(--c) 82%,transparent) 0,color-mix(in srgb,var(--c) 82%,transparent) var(--fill),transparent var(--fill)),
+    var(--glass);
+  box-shadow:inset 0 0 0 1px var(--rim),inset 0 2px 4px rgba(0,0,0,.28)}
+/* Glass bead thumb: clear body, bright highlight, colored glow; swells like a lens while dragging */
+.gauge input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-7px;border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.45) 26%,rgba(255,255,255,.1) 62%),
+    color-mix(in srgb,var(--c) 30%,transparent);
+  border:1.5px solid rgba(255,255,255,.75);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 6px 14px rgba(0,0,0,.32),
+    inset 0 -4px 7px color-mix(in srgb,var(--c) 50%,transparent),inset 0 2px 3px rgba(255,255,255,.85);
+  transition:transform .15s cubic-bezier(.3,1.6,.5,1),box-shadow .15s}
+.gauge input[type=range]::-moz-range-thumb{width:27px;height:27px;border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.45) 26%,rgba(255,255,255,.1) 62%),
+    color-mix(in srgb,var(--c) 30%,transparent);
+  border:1.5px solid rgba(255,255,255,.75);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 6px 14px rgba(0,0,0,.32),
+    inset 0 -4px 7px color-mix(in srgb,var(--c) 50%,transparent),inset 0 2px 3px rgba(255,255,255,.85)}
+.gauge input[type=range]:active::-webkit-slider-thumb{transform:scale(1.28);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 40%,transparent),0 10px 22px rgba(0,0,0,.35),
+    inset 0 -4px 8px color-mix(in srgb,var(--c) 40%,transparent),inset 0 2px 3px rgba(255,255,255,.9)}
+.gauge.unset input[type=range]::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--line),0 4px 10px rgba(0,0,0,.25),inset 0 2px 3px rgba(255,255,255,.85);opacity:.85}
+.gauge.unset input[type=range]::-moz-range-thumb{box-shadow:0 0 0 2px var(--line),inset 0 2px 3px rgba(255,255,255,.85);opacity:.85}
+@media (prefers-reduced-motion:reduce){.gauge input[type=range]::-webkit-slider-thumb{transition:none}}
+.ticks{display:flex;justify-content:space-between;padding:0 15px;height:22px;margin-top:1px}
+.ticks span{position:relative;width:0;display:flex;flex-direction:column;align-items:center}
+.ticks i{display:block;width:1.5px;height:5px;background:var(--line)}
+.ticks .w i{height:8px;background:var(--muted)}
+.ticks b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);line-height:1;margin-top:3px}
+
 .auth{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:12px;padding:24px 20px;display:flex;flex-direction:column;gap:14px;max-width:440px;width:100%;margin:0 auto}
 .auth p{margin:0;color:var(--muted);font-size:14px}
 .auth .row{display:flex;flex-wrap:wrap;gap:8px}
@@ -435,27 +486,57 @@ $("f-mfr").addEventListener("change",()=>{ $("otherWrap").hidden=$("f-mfr").valu
 
 // Rating + chip controls, built for both forms
 const STEPS=[1,1.5,2,2.5,3,3.5,4,4.5,5];
+
+// ---- Haptics ----
+// Android: the Vibration API. iPhone (iOS 18+ Safari): toggling a hidden switch
+// control plays the system "tick". Older iPhones simply get no vibration.
+const hapticSwitch=(()=>{ try{
+  const l=document.createElement("label"); l.style.display="none"; l.setAttribute("aria-hidden","true");
+  const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1;
+  l.appendChild(i); document.body.appendChild(l); return l;
+}catch(e){ return null; } })();
+function haptic(){
+  try{ if(navigator.vibrate){ navigator.vibrate(8); return; } hapticSwitch?.click(); }catch(e){}
+}
+
+// ---- Rating gauges: drag or tap, snaps to .5, ticks on every half point ----
 function buildRatings(el,prefix,st){
   el.innerHTML=RATINGS.map(r=>`
   <div class="rate">
-    <div class="rate-head">${r.t}<span id="${prefix}v-${r.k}">not rated</span></div>
-    <div class="seg" role="group" aria-label="${r.t}">${STEPS.map(n=>`<button type="button" class="${n%1?"half":""}" id="${prefix}-${r.k}-${n}" data-k="${r.k}" data-n="${n}" aria-pressed="false" aria-label="${n}" style="--c:${col(n,r.neutral)}">${n}</button>`).join("")}</div>
+    <div class="rate-head"><label for="${prefix}-${r.k}">${r.t}</label>
+      <span class="rv"><span id="${prefix}v-${r.k}">not rated</span><button type="button" class="clear" id="${prefix}x-${r.k}" data-k="${r.k}" hidden>Clear</button></span></div>
+    <div class="gauge unset" id="${prefix}g-${r.k}">
+      <input type="range" min="1" max="5" step="0.5" value="3" id="${prefix}-${r.k}" data-k="${r.k}"
+        aria-label="${r.t}: 1 is ${r.lo}, 5 is ${r.hi}">
+      <div class="ticks" aria-hidden="true">${STEPS.map(n=>`<span class="${n%1?"h":"w"}"><i></i>${n%1?"":`<b>${n}</b>`}</span>`).join("")}</div>
+    </div>
     <div class="scale-ends"><span>${r.lo}</span>${r.mid?`<span>${r.mid}</span>`:""}<span>${r.hi}</span></div>
   </div>`).join("");
+  el.addEventListener("input",e=>{
+    const i=e.target.closest('input[type="range"]'); if(!i) return;
+    const k=i.dataset.k, v=+i.value;
+    if(st.ratings[k]!==v){ st.ratings[k]=v; haptic(); }
+    paintOne(prefix,k,v);
+  });
+  // A tap that lands on the current spot doesn't fire "input", so a click also counts as rating it.
   el.addEventListener("click",e=>{
-    const b=e.target.closest("button[data-k]"); if(!b) return;
-    const k=b.dataset.k, n=+b.dataset.n;
-    if(st.ratings[k]===n) delete st.ratings[k]; else st.ratings[k]=n;   // tap again to clear
-    paintRatings(prefix,st);
+    const c=e.target.closest("button.clear");
+    if(c){ delete st.ratings[c.dataset.k]; paintOne(prefix,c.dataset.k,undefined); return; }
+    const i=e.target.closest('input[type="range"]');
+    if(i && st.ratings[i.dataset.k]==null){ st.ratings[i.dataset.k]=+i.value; haptic(); paintOne(prefix,i.dataset.k,+i.value); }
   });
 }
-function paintRatings(prefix,st){
-  RATINGS.forEach(r=>{
-    const v=st.ratings[r.k];
-    STEPS.forEach(n=>$(`${prefix}-${r.k}-${n}`).setAttribute("aria-pressed",v===n?"true":"false"));
-    const lab=$(`${prefix}v-${r.k}`); lab.textContent=v?`${v} / 5`:"not rated"; lab.style.color=v?col(v,r.neutral):"";
-  });
+function paintOne(prefix,k,v){
+  const g=$(`${prefix}g-${k}`), i=$(`${prefix}-${k}`), lab=$(`${prefix}v-${k}`), x=$(`${prefix}x-${k}`);
+  const set=typeof v==="number";
+  g.classList.toggle("unset",!set);
+  i.value=set?v:3;
+  g.style.setProperty("--c",set?col(v):"var(--line)");
+  g.style.setProperty("--fill",set?`calc(30px + (100% - 30px) * ${(v-1)/4})`:"0px");   // runs under the whole bead so it looks evenly tinted
+  lab.textContent=set?`${v} / 5`:"not rated"; lab.style.color=set?col(v):"";
+  x.hidden=!set;
 }
+function paintRatings(prefix,st){ RATINGS.forEach(r=>paintOne(prefix,r.k,st.ratings[r.k])); }
 function buildChips(el,prefix,st){
   el.innerHTML=EFFECTS.map((f,i)=>`<button type="button" class="chipbtn" id="${prefix}fx-${i}" data-f="${f}" aria-pressed="false">${f}</button>`).join("");
   el.addEventListener("click",e=>{
