@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fill Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F6F5; --surface:#FFFFFF; --ink:#16252A; --muted:#5B6D71; --line:#D5DEDC;
+  --accent:#0E7466; --accent-soft:#DCEFEA; --amber:#B8661C; --amber-soft:#F7E6D3;
+  --on-accent:#FFFFFF; --good:#1F7A3E; --warn:#A86A00; --bad:#B03A2E; --chip:#EDF1F0;
+  /* effectiveness scale: 1 = didn't work ... 5 = worked great */
+  --s1:#C0392B; --s2:#C4581A; --s3:#A67A00; --s4:#4E8A17; --s5:#17824A; --neutral:#5A6FB0;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Public Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0F1719; --surface:#172225; --ink:#E4ECEA; --muted:#93A5A8; --line:#2A3A3E;
+    --accent:#4CC2AE; --accent-soft:#16352F; --amber:#E0A05E; --amber-soft:#3A2A19;
+    --on-accent:#07201C; --good:#5DC47F; --warn:#E3B04B; --bad:#EE7B6F; --chip:#1F2D30;
+    --s1:#F07A6C; --s2:#F39A5C; --s3:#E8C24E; --s4:#A5D45B; --s5:#56CC86; --neutral:#93A6E8;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0F1719; --surface:#172225; --ink:#E4ECEA; --muted:#93A5A8; --line:#2A3A3E;
+  --accent:#4CC2AE; --accent-soft:#16352F; --amber:#E0A05E; --amber-soft:#3A2A19;
+  --on-accent:#07201C; --good:#5DC47F; --warn:#E3B04B; --bad:#EE7B6F; --chip:#1F2D30;
+  --s1:#F07A6C; --s2:#F39A5C; --s3:#E8C24E; --s4:#A5D45B; --s5:#56CC86; --neutral:#93A6E8;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top, 0px));transform:translate(-50%,-16px);white-space:nowrap;opacity:0;pointer-events:none;z-index:50;
+  background:var(--good);color:var(--on-accent);font-weight:600;font-size:15px;padding:12px 18px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.25);
+  max-width:calc(100% - 32px);text-align:center;transition:opacity .2s ease,transform .2s ease}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--bad)}
+.btn.saved{background:var(--good)!important;border-color:var(--good)!important;color:var(--on-accent)!important}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* Rating gauge */
+.rate-head label{font-weight:600}
+.rate-head .rv{display:flex;align-items:center;gap:8px}
+.clear{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:0;cursor:pointer}
+.gauge{--c:var(--line);--fill:0px;position:relative}
+.gauge input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:34px;margin:0;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer}
+.gauge input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:17px}
+/* Liquid-glass track: frosted tube, tinted glass fill, specular highlight on top */
+.gauge{--glass:color-mix(in srgb,var(--chip) 65%,transparent);--shine:rgba(255,255,255,.55);--rim:rgba(0,0,0,.06)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .gauge{--shine:rgba(255,255,255,.3);--rim:rgba(255,255,255,.14)}}
+:root[data-theme="dark"] .gauge{--shine:rgba(255,255,255,.3);--rim:rgba(255,255,255,.14)}
+.gauge input[type=range]::-webkit-slider-runnable-track{height:16px;border-radius:8px;
+  background:
+    linear-gradient(to bottom,var(--shine),rgba(255,255,255,0) 55%),
+    linear-gradient(to right,color-mix(in srgb,var(--c) 82%,transparent) 0,color-mix(in srgb,var(--c) 82%,transparent) var(--fill),transparent var(--fill)),
+    var(--glass);
+  box-shadow:inset 0 0 0 1px var(--rim),inset 0 2px 4px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.08)}
+.gauge input[type=range]::-moz-range-track{height:16px;border-radius:8px;
+  background:
+    linear-gradient(to bottom,var(--shine),rgba(255,255,255,0) 55%),
+    linear-gradient(to right,color-mix(in srgb,var(--c) 82%,transparent) 0,color-mix(in srgb,var(--c) 82%,transparent) var(--fill),transparent var(--fill)),
+    var(--glass);
+  box-shadow:inset 0 0 0 1px var(--rim),inset 0 2px 4px rgba(0,0,0,.28)}
+/* Glass bead thumb: clear body, bright highlight, colored glow; swells like a lens while dragging */
+.gauge input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-7px;border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.45) 26%,rgba(255,255,255,.1) 62%),
+    color-mix(in srgb,var(--c) 30%,transparent);
+  border:1.5px solid rgba(255,255,255,.75);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 6px 14px rgba(0,0,0,.32),
+    inset 0 -4px 7px color-mix(in srgb,var(--c) 50%,transparent),inset 0 2px 3px rgba(255,255,255,.85);
+  transition:transform .15s cubic-bezier(.3,1.6,.5,1),box-shadow .15s}
+.gauge input[type=range]::-moz-range-thumb{width:27px;height:27px;border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.45) 26%,rgba(255,255,255,.1) 62%),
+    color-mix(in srgb,var(--c) 30%,transparent);
+  border:1.5px solid rgba(255,255,255,.75);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 6px 14px rgba(0,0,0,.32),
+    inset 0 -4px 7px color-mix(in srgb,var(--c) 50%,transparent),inset 0 2px 3px rgba(255,255,255,.85)}
+.gauge input[type=range]:active::-webkit-slider-thumb{transform:scale(1.28);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 40%,transparent),0 10px 22px rgba(0,0,0,.35),
+    inset 0 -4px 8px color-mix(in srgb,var(--c) 40%,transparent),inset 0 2px 3px rgba(255,255,255,.9)}
+.gauge.unset input[type=range]::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--line),0 4px 10px rgba(0,0,0,.25),inset 0 2px 3px rgba(255,255,255,.85);opacity:.85}
+.gauge.unset input[type=range]::-moz-range-thumb{box-shadow:0 0 0 2px var(--line),inset 0 2px 3px rgba(255,255,255,.85);opacity:.85}
+@media (prefers-reduced-motion:reduce){.gauge input[type=range]::-webkit-slider-thumb{transition:none}}
+.ticks{display:flex;justify-content:space-between;padding:0 15px;height:22px;margin-top:1px}
+.ticks span{position:relative;width:0;display:flex;flex-direction:column;align-items:center}
+.ticks i{display:block;width:1.5px;height:5px;background:var(--line)}
+.ticks .w i{height:8px;background:var(--muted)}
+.ticks b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);line-height:1;margin-top:3px}
+
+.auth{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:12px;padding:24px 20px;display:flex;flex-direction:column;gap:14px;max-width:440px;width:100%;margin:0 auto}
+.auth p{margin:0;color:var(--muted);font-size:14px}
+.auth .row{display:flex;flex-wrap:wrap;gap:8px}
+.account{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.demo-banner{background:var(--accent-soft);color:var(--ink);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:14px}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding:0 16px}
+.wrap{max-width:1080px;margin:0 auto;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(28px,5vw,40px);font-weight:700}
+h2{font-size:20px;font-weight:700}
+.lede{color:var(--muted);max-width:62ch;margin:6px 0 0}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono)}
+.tab{font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--good)}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:focus-visible,.seg button:focus-visible,.chipbtn:focus-visible,.mfr:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:4px 10px;font-size:12px}
+
+/* Color key */
+.key{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--muted)}
+.key-scale{display:flex;border-radius:6px;overflow:hidden}
+.key-scale span{width:34px;height:20px;display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--on-accent);background:var(--c)}
+
+/* Check-in */
+.checkin{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.checkin-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px}
+.reassure{font-size:13px;color:var(--muted);max-width:52ch;margin:4px 0 0}
+.streakless{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.streakless b{font-family:var(--display);font-size:22px;color:var(--ink)}
+
+/* Manufacturer scoreboard */
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.mfr{--c:var(--line);background:color-mix(in srgb,var(--c) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));border-top:5px solid var(--c);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-align:left;color:var(--ink)}
+.mfr.active{box-shadow:0 0 0 2px var(--c)}
+.mfr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mfr-name{font-weight:600;font-size:15px;display:block}
+.mfr-med{font-size:12px;color:var(--muted);display:block}
+.score{font-family:var(--display);font-size:30px;font-weight:700;line-height:1;color:var(--c)}
+.score small{font-size:13px;color:var(--muted);font-family:var(--body);font-weight:500}
+.verdict{flex:none;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--c);color:var(--on-accent)}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:5px 8px;align-items:center;font-size:12px;color:var(--muted)}
+.bar{height:7px;border-radius:4px;background:var(--chip);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);border-radius:4px}
+.empty-note{color:var(--muted);font-size:14px;margin:0}
+
+/* Forms */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.panel > summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel > summary::-webkit-details-marker{display:none}
+.panel > summary::after{content:"+";font-family:var(--mono);font-size:20px;color:var(--muted)}
+.panel[open] > summary::after{content:"–"}
+.panel form{padding:0 20px 20px}
+form{display:flex;flex-direction:column;gap:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+textarea{min-height:70px;resize:vertical}
+.ratings{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 24px}
+.rate{display:flex;flex-direction:column;gap:6px}
+.rate-head{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}
+.rate-head span{font-weight:600;color:var(--muted);font-size:12px}
+.seg{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
+.seg button.half{font-size:11px;opacity:.9}
+.seg button{border:1px solid var(--line);border-bottom:3px solid var(--c);background:var(--bg);color:var(--ink);border-radius:6px;padding:6px 0;font-family:var(--mono);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--on-accent)}
+.scale-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chipbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:13px}
+.chipbtn[aria-pressed="true"]{background:var(--amber-soft);border-color:var(--amber);color:var(--amber);font-weight:600}
+.form-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.msg{font-size:13px;color:var(--muted)}
+.msg.err{color:var(--bad)}
+
+/* Log */
+.log-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters select{width:auto;max-width:100%}
+.entries{display:flex;flex-direction:column;gap:12px}
+.entry{--c:var(--line);background:var(--surface);border:1px solid color-mix(in srgb,var(--c) 40%,var(--line));border-left:6px solid var(--c);border-radius:10px;display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);overflow:hidden}
+.rx{background:color-mix(in srgb,var(--c) 14%,var(--surface));padding:14px 16px;display:flex;flex-direction:column;gap:4px;border-right:1px dashed color-mix(in srgb,var(--c) 60%,var(--line))}
+.rx .mono{font-size:12px;color:var(--muted)}
+.rx strong{font-size:16px}
+.rx .when{font-family:var(--display);font-weight:700;font-size:18px}
+.rx .grade{align-self:flex-start;margin-top:4px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--c);color:var(--on-accent)}
+.body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.basis{font-size:12px;color:var(--muted)}
+.scores{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;font-size:13px}
+.scores > span{display:flex;align-items:center;gap:8px}
+.scores b{font-family:var(--mono);font-weight:500;min-width:1ch}
+.pip{display:inline-flex;gap:2px}
+.pip i{width:8px;height:8px;border-radius:2px;background:var(--chip)}
+.pip i.f{background:var(--c)}
+.fx{display:flex;flex-wrap:wrap;gap:4px}
+.fx span{font-size:12px;background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:2px 9px;font-weight:500}
+.note{font-size:14px;color:var(--ink);margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.entry-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.example-tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--chip);color:var(--muted);padding:2px 8px;border-radius:4px}
+.confirm{display:flex;gap:6px;align-items:center;color:var(--bad);font-weight:600}
+
+/* Daily logs inside a fill */
+.days{border-top:1px solid var(--line);padding-top:8px}
+.days > summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);list-style:none;display:flex;align-items:center;gap:6px}
+.days > summary::-webkit-details-marker{display:none}
+.days > summary::before{content:"▸";font-size:11px}
+.days[open] > summary::before{content:"▾"}
+.daylist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.day{--c:var(--line);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--c) 8%,var(--bg));border-left:4px solid var(--c);font-size:13px}
+.day .d{font-weight:600;white-space:nowrap}
+.day .mini{display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--muted)}
+.day .mini b{color:var(--ink);font-family:var(--mono);font-weight:500}
+.day .dnote{grid-column:2/-1;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere}
+
+/* Current med overview */
+.overview{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.overview > summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.overview > summary::-webkit-details-marker{display:none}
+.overview > summary::after{content:"+";font-family:var(--mono);font-size:20px;color:var(--muted)}
+.overview[open] > summary::after{content:"–"}
+.ov-body{padding:0 20px 20px;display:flex;flex-direction:column;gap:20px}
+.ov-top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.ov-top .field{flex:1 1 280px;max-width:480px}
+.ov-sum{font-size:13px;color:var(--muted)}
+.ov-sum b{font-family:var(--display);font-size:22px;color:var(--ink)}
+.ov-group{display:flex;flex-direction:column;gap:10px}
+.rings{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px 10px}
+.ring{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;color:var(--muted)}
+.ring svg{width:84px;height:84px;display:block}
+.ring .track{fill:none;stroke:var(--chip);stroke-width:9}
+.ring .arc{fill:none;stroke:var(--c);stroke-width:9;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dasharray .5s ease}
+.ring .val{fill:var(--ink);font-family:var(--display);font-weight:700;font-size:20px}
+.ring .unit{fill:var(--muted);font-family:var(--body);font-size:10px}
+.ring strong{color:var(--ink);font-size:13px;font-weight:600}
+.ring:hover .tip,.ring:focus-within .tip,.ring:focus .tip{opacity:1}
+.ring .tip{position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%);background:var(--ink);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:2}
+.timeline{display:flex;flex-wrap:wrap;gap:6px}
+.tday{--c:var(--line);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;padding:6px 4px;border-radius:8px;background:color-mix(in srgb,var(--c) 14%,var(--bg));border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));font-size:11px;color:var(--muted)}
+.tday b{font-family:var(--mono);font-weight:500;font-size:14px;color:var(--ink)}
+.tday i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+@media (max-width:620px){
+  .entry{grid-template-columns:1fr}
+  .rx{border-right:0;border-bottom:1px dashed color-mix(in srgb,var(--c) 60%,var(--line))}
+  .day{grid-template-columns:1fr auto}
+  .day .mini,.day .dnote{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Medication fill log</div>
+      <h1>Which manufacturer works for me?</h1>
+      <p class="lede">Log each fill with the manufacturer on the bottle, then check in on the days you remember. Scores average only the days you actually logged.</p>
+    </div>
+    <div class="account"><div class="status" id="status"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></div><button class="btn small ghost" id="signOutBtn" type="button" hidden>Sign out</button></div>
+  </header>
+
+  <section class="auth" id="authCard" hidden aria-labelledby="authTitle">
+    <h2 id="authTitle">Sign in to Fill Log</h2>
+    <p id="authIntro">Your logs are saved to your own account, so they show up on your phone and your computer.</p>
+    <form id="authForm" novalidate style="gap:12px">
+      <div class="field"><label class="label" for="au-email">Email</label><input type="email" id="au-email" autocomplete="email" required></div>
+      <div class="field"><label class="label" for="au-pass">Password</label><input type="password" id="au-pass" autocomplete="current-password" minlength="8" required></div>
+      <div class="row">
+        <button type="submit" class="btn primary" id="signInBtn">Sign in</button>
+        <button type="button" class="btn" id="signUpBtn">Create account</button>
+      </div>
+      <span class="msg" id="authMsg" role="status"></span>
+    </form>
+  </section>
+
+  <div id="app" hidden style="display:flex;flex-direction:column;gap:28px">
+
+  <!-- Daily check-in -->
+  <section class="checkin" aria-labelledby="ciTitle">
+    <div class="checkin-head">
+      <div>
+        <h2 id="ciTitle">Check in today</h2>
+        <p class="reassure">Rate only what you notice. Skipped days don't count against you, and the average only uses days you log.</p>
+      </div>
+      <div class="streakless" id="ciCount"></div>
+    </div>
+    <form id="ciForm" novalidate>
+      <div class="grid">
+        <div class="field"><label class="label" for="ci-fill">Which fill</label><select id="ci-fill"></select></div>
+        <div class="field"><label class="label" for="ci-date">Day</label><input type="date" id="ci-date"></div>
+      </div>
+      <div class="ratings" id="ciRatings"></div>
+      <div class="field">
+        <div class="label">Side effects today</div>
+        <div class="chips" id="ciFx"></div>
+      </div>
+      <div class="field"><label class="label" for="ci-note">Note (optional)</label><textarea id="ci-note" placeholder="Kicked in at 9, wore off around 2…"></textarea></div>
+      <div class="form-foot">
+        <button type="submit" class="btn primary" id="ciSave">Save check-in</button>
+        <span class="msg" id="ciMsg" role="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <details class="overview" id="overview" open>
+    <summary><h2>My current med</h2></summary>
+    <div class="ov-body">
+      <div class="ov-top">
+        <div class="field"><label class="label" for="ov-scope">Show</label><select id="ov-scope"></select></div>
+        <div class="ov-sum" id="ovSum"></div>
+      </div>
+      <div class="ov-group">
+        <div class="label">How it's working (average of logged days, out of 5)</div>
+        <div class="rings" id="ovRatings"></div>
+      </div>
+      <div class="ov-group">
+        <div class="label">Side effects (share of logged days)</div>
+        <div class="rings" id="ovFx"></div>
+      </div>
+      <div class="ov-group">
+        <div class="label">Days logged (color = overall)</div>
+        <div class="timeline" id="ovDays"></div>
+        <details class="days" id="ovListWrap"><summary id="ovListSum">See every day</summary><div class="daylist" id="ovList"></div></details>
+      </div>
+    </div>
+  </details>
+
+  <section aria-labelledby="boardTitle" style="display:flex;flex-direction:column;gap:12px">
+    <div class="log-head">
+      <h2 id="boardTitle">Manufacturer scoreboard</h2>
+      <div class="key" aria-label="Color key">
+        <span>Didn't work</span>
+        <span class="key-scale"><span style="--c:var(--s1)">1</span><span style="--c:var(--s2)">2</span><span style="--c:var(--s3)">3</span><span style="--c:var(--s4)">4</span><span style="--c:var(--s5)">5</span></span>
+        <span>Worked great</span>
+      </div>
+    </div>
+    <div class="board" id="board"></div>
+    <span class="msg">Each fill's score is the average of the days you logged. Tap a card to filter your history.</span>
+  </section>
+
+  <details class="panel" id="fillPanel">
+    <summary><h2 id="formTitle">Add a new fill</h2></summary>
+    <form id="entryForm" novalidate>
+      <span class="msg">Log this once when you pick up a new bottle. The manufacturer is on the pharmacy label, the stock bottle, or the pill imprint.</span>
+      <div class="grid">
+        <div class="field"><label class="label" for="f-date">Fill date</label><input type="date" id="f-date" required></div>
+        <div class="field"><label class="label" for="f-med">Medication (generic name)</label><select id="f-med"></select></div>
+        <div class="field" id="medOtherWrap" hidden><label class="label" for="f-med-other">Other medication</label><input id="f-med-other"></div>
+        <div class="field"><label class="label" for="f-form">Form</label>
+          <select id="f-form"><option>IR (instant release)</option><option>XR (extended release)</option><option>ER-CD (biphasic capsule)</option><option>ER tablet (OROS, Concerta-type)</option><option>Chewable or liquid</option><option>Patch</option></select></div>
+        <div class="field"><label class="label" for="f-dose">Dose</label><input id="f-dose" placeholder="e.g. 20 mg"></div>
+        <div class="field"><label class="label" for="f-mfr">Manufacturer</label>
+          <select id="f-mfr" required>
+            <option value="">Choose…</option>
+            <option>Alvogen</option><option>Amneal</option><option>Ascent</option><option>Aurobindo</option><option>AvKARE</option>
+            <option>Camber</option><option>Elite</option><option>Epic Pharma</option><option>Hikma</option><option>KVK-Tech</option>
+            <option>Lannett</option><option>Lupin</option><option>Mylan (Viatris)</option><option>Patriot (Janssen generic)</option>
+            <option>Sandoz</option><option>SpecGx (Mallinckrodt)</option><option>Sun Pharma</option><option>Teva</option>
+            <option>Trigen</option><option>Zydus</option>
+            <option>Brand name (Takeda, Janssen, Novartis…)</option><option>Other</option>
+          </select></div>
+        <div class="field" id="otherWrap" hidden><label class="label" for="f-mfr-other">Other manufacturer</label><input id="f-mfr-other"></div>
+        <div class="field"><label class="label" for="f-ndc">NDC or pill imprint (optional)</label><input id="f-ndc" class="mono" placeholder="e.g. 65162-026 or AN 26"></div>
+        <div class="field"><label class="label" for="f-pharm">Pharmacy</label><input id="f-pharm" placeholder="Name and location"></div>
+      </div>
+
+      <div>
+        <div class="label" style="margin-bottom:4px">First-day ratings (optional)</div>
+        <p class="msg" style="margin:0 0 10px" id="fRateHint">Skip these if it's too early to tell. You can check in later.</p>
+        <div class="ratings" id="ratings"></div>
+      </div>
+
+      <div class="field">
+        <div class="label">Side effects</div>
+        <div class="chips" id="fxChips"></div>
+      </div>
+
+      <div class="grid">
+        <div class="field"><label class="label" for="f-again">Would you refill this manufacturer?</label>
+          <select id="f-again"><option value="">Not sure yet</option><option value="yes">Yes</option><option value="maybe">Maybe</option><option value="no">No</option></select></div>
+      </div>
+
+      <div class="field"><label class="label" for="f-notes">Notes about this fill</label><textarea id="f-notes" placeholder="Anything that stood out this month…"></textarea></div>
+
+      <div class="form-foot">
+        <button type="submit" class="btn primary" id="saveBtn">Save fill</button>
+        <button type="button" class="btn ghost" id="cancelEdit" hidden>Cancel edit</button>
+        <span class="msg" id="formMsg" role="status"></span>
+      </div>
+    </form>
+  </details>
+
+  <section aria-labelledby="logTitle" style="display:flex;flex-direction:column;gap:12px">
+    <div class="log-head">
+      <h2 id="logTitle">Fill history</h2>
+      <div class="filters">
+        <label class="label" for="filterMfr">Show</label>
+        <select id="filterMfr"><option value="">All manufacturers</option></select>
+        <button class="btn ghost" id="exportBtn" type="button" hidden>Export CSV</button>
+        <button class="btn ghost" id="backupBtn" type="button" hidden>Export backup</button>
+        <button class="btn ghost" id="importBtn" type="button">Import backup</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <p class="msg" id="ioMsg" role="status" style="margin:0"></p>
+    <div class="entries" id="entries"></div>
+  </section>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="supabase.js"></script>
+<script>
+const RATINGS=[
+  {k:"focus",t:"Focus",lo:"Scattered",hi:"Locked in"},
+  {k:"productivity",t:"Productivity",lo:"Got nothing done",hi:"Very productive"},
+  {k:"duration",t:"How long it lasted",s:"Duration",lo:"Wore off fast",hi:"Full day"},
+  {k:"comedown",t:"Comedown (mood)",s:"Comedown",lo:"Hard mood crash",hi:"Smooth"},
+  {k:"tiredness",t:"Tiredness",lo:"Physically exhausted",hi:"Full energy"},
+  {k:"depression",t:"Depression",lo:"Very low",hi:"Not depressed"},
+  {k:"irritability",t:"Irritability",lo:"Very irritable",hi:"Patient"},
+  {k:"anxiety",t:"Anxiety",lo:"Very anxious",hi:"Calm"},
+  {k:"appetite",t:"Appetite",lo:"Always hungry",mid:"Normal",hi:"No appetite"},
+  {k:"overall",t:"Overall",lo:"Didn't work",hi:"Worked great"}
+];
+// Older fills rated a single "Mood" before it was split; still shown when present.
+const LEGACY=[{k:"mood",t:"Mood (before split)",s:"Mood",lo:"",hi:""}];
+const ALLR=[...RATINGS.slice(0,-1),...LEGACY,RATINGS[RATINGS.length-1]];
+const MEDS=[
+  "Amphetamine salts (Adderall)",
+  "Lisdexamfetamine (Vyvanse)",
+  "Methylphenidate (Ritalin, Concerta, Metadate CD)",
+  "Dexmethylphenidate (Focalin)",
+  "Dextroamphetamine (Dexedrine, Zenzedi)",
+  "Amphetamine sulfate (Evekeo)",
+  "Atomoxetine (Strattera)",
+  "Viloxazine (Qelbree)",
+  "Guanfacine ER (Intuniv)",
+  "Clonidine ER (Kapvay)",
+  "Bupropion (Wellbutrin)"
+];
+const EFFECTS=["Headache","Jittery","Trouble sleeping","Racing heart","Dry mouth","Stomach upset","Crash","Brain fog","None"];
+const EXAMPLES=[
+  {id:"ex1",example:true,date:"2026-08-04",med:MEDS[0],form:"IR (instant release)",dose:"20 mg",mfr:"Teva",ndc:"",pharmacy:"Example pharmacy",ratings:{focus:4,duration:4,comedown:4,depression:4,irritability:4,anxiety:4,appetite:2,overall:4},effects:["Trouble sleeping"],again:"yes",notes:"Example entry. Save your first fill and these disappear.",
+   checkins:[{id:"c1",date:"2026-08-09",ratings:{focus:5,overall:5,anxiety:4},effects:[],note:"Great day."},{id:"c2",date:"2026-08-17",ratings:{focus:3,overall:3,irritability:3},effects:["Headache"],note:""}]},
+  {id:"ex2",example:true,date:"2026-09-03",med:MEDS[0],form:"IR (instant release)",dose:"20 mg",mfr:"Aurobindo",ndc:"",pharmacy:"Example pharmacy",ratings:{focus:2,duration:2,comedown:2,depression:3,irritability:2,anxiety:2,appetite:3,overall:2},effects:["Headache","Crash"],again:"no",notes:"Example entry showing a month that didn't go well.",checkins:[]}
+];
+
+let db=null, downloads=null, entries=[], usingExamples=true, editingId=null, filter="", pendingDelete=null, pendingDay=null;
+const fstate={ratings:{},effects:new Set()};   // new-fill form
+const cstate={ratings:{},effects:new Set()};   // check-in form
+const $=id=>document.getElementById(id);
+const today=()=>{ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+
+function col(v,neutral){ if(neutral) return "var(--neutral)"; if(v==null||isNaN(v)||v===0) return "var(--line)"; const n=Math.min(5,Math.max(1,Math.round(v))); return `var(--s${n})`; }
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmtDate(d,short){ if(!d) return ""; const [y,m,dd]=d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString(undefined,short?{weekday:"short",month:"short",day:"numeric"}:{month:"short",day:"numeric",year:"numeric"}); }
+function avg(a){ const v=a.filter(x=>typeof x==="number"); return v.length? v.reduce((s,x)=>s+x,0)/v.length : null; }
+function verdict(o){ return o==null?"No ratings yet": o>=4.5?"Worked great": o>=3.5?"Works for me": o>=2.5?"Mixed": o>=1.5?"Poor":"Didn't work"; }
+function fmt1(v){ return v==null?"–":(Math.round(v*10)/10).toString(); }
+
+// Medications
+function matchMed(v){
+  const s=(v||"").toLowerCase();
+  if(MEDS.includes(v)) return v;
+  if(/adderall|amphetamine salts|amphetamine-dextro|dextroamphetamine-amph|mixed amph/.test(s)) return MEDS[0];
+  if(/lisdex|vyvanse/.test(s)) return MEDS[1];
+  if(/dexmethyl|focalin/.test(s)) return MEDS[3];
+  if(/methylphen|ritalin|concerta|metadate/.test(s)) return MEDS[2];
+  if(/dexedrine|zenzedi|dextroamphetamine/.test(s)) return MEDS[4];
+  if(/evekeo|amphetamine sulfate/.test(s)) return MEDS[5];
+  if(/strattera|atomox/.test(s)) return MEDS[6];
+  if(/qelbree|viloxazine/.test(s)) return MEDS[7];
+  if(/intuniv|guanfacine/.test(s)) return MEDS[8];
+  if(/kapvay|clonidine/.test(s)) return MEDS[9];
+  if(/wellbutrin|bupropion/.test(s)) return MEDS[10];
+  return null;
+}
+function medLabel(v){ return matchMed(v)||v||""; }
+function shortMed(v){ return medLabel(v).replace(/\s*\(.*\)$/,""); }
+$("f-med").innerHTML=MEDS.map(m=>`<option>${m}</option>`).join("")+`<option value="Other">Other</option>`;
+$("f-med").addEventListener("change",()=>{ $("medOtherWrap").hidden=$("f-med").value!=="Other"; });
+$("f-mfr").addEventListener("change",()=>{ $("otherWrap").hidden=$("f-mfr").value!=="Other"; });
+
+// Rating + chip controls, built for both forms
+const STEPS=[1,1.5,2,2.5,3,3.5,4,4.5,5];
+
+// ---- Haptics ----
+// Android: the Vibration API. iPhone (iOS 18+ Safari): toggling a hidden switch
+// control plays the system "tick". Older iPhones simply get no vibration.
+const hapticSwitch=(()=>{ try{
+  const l=document.createElement("label"); l.style.display="none"; l.setAttribute("aria-hidden","true");
+  const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1;
+  l.appendChild(i); document.body.appendChild(l); return l;
+}catch(e){ return null; } })();
+function haptic(){
+  try{ if(navigator.vibrate){ navigator.vibrate(8); return; } hapticSwitch?.click(); }catch(e){}
+}
+
+// ---- Rating gauges: drag or tap, snaps to .5, ticks on every half point ----
+function buildRatings(el,prefix,st){
+  el.innerHTML=RATINGS.map(r=>`
+  <div class="rate">
+    <div class="rate-head"><label for="${prefix}-${r.k}">${r.t}</label>
+      <span class="rv"><span id="${prefix}v-${r.k}">not rated</span><button type="button" class="clear" id="${prefix}x-${r.k}" data-k="${r.k}" hidden>Clear</button></span></div>
+    <div class="gauge unset" id="${prefix}g-${r.k}">
+      <input type="range" min="1" max="5" step="0.5" value="3" id="${prefix}-${r.k}" data-k="${r.k}"
+        aria-label="${r.t}: 1 is ${r.lo}, 5 is ${r.hi}">
+      <div class="ticks" aria-hidden="true">${STEPS.map(n=>`<span class="${n%1?"h":"w"}"><i></i>${n%1?"":`<b>${n}</b>`}</span>`).join("")}</div>
+    </div>
+    <div class="scale-ends"><span>${r.lo}</span>${r.mid?`<span>${r.mid}</span>`:""}<span>${r.hi}</span></div>
+  </div>`).join("");
+  el.addEventListener("input",e=>{
+    const i=e.target.closest('input[type="range"]'); if(!i) return;
+    const k=i.dataset.k, v=+i.value;
+    if(st.ratings[k]!==v){ st.ratings[k]=v; haptic(); }
+    paintOne(prefix,k,v);
+  });
+  // A tap that lands on the current spot doesn't fire "input", so a click also counts as rating it.
+  el.addEventListener("click",e=>{
+    const c=e.target.closest("button.clear");
+    if(c){ delete st.ratings[c.dataset.k]; paintOne(prefix,c.dataset.k,undefined); return; }
+    const i=e.target.closest('input[type="range"]');
+    if(i && st.ratings[i.dataset.k]==null){ st.ratings[i.dataset.k]=+i.value; haptic(); paintOne(prefix,i.dataset.k,+i.value); }
+  });
+}
+function paintOne(prefix,k,v){
+  const g=$(`${prefix}g-${k}`), i=$(`${prefix}-${k}`), lab=$(`${prefix}v-${k}`), x=$(`${prefix}x-${k}`);
+  const set=typeof v==="number";
+  g.classList.toggle("unset",!set);
+  i.value=set?v:3;
+  g.style.setProperty("--c",set?col(v):"var(--line)");
+  g.style.setProperty("--fill",set?`calc(30px + (100% - 30px) * ${(v-1)/4})`:"0px");   // runs under the whole bead so it looks evenly tinted
+  lab.textContent=set?`${v} / 5`:"not rated"; lab.style.color=set?col(v):"";
+  x.hidden=!set;
+}
+function paintRatings(prefix,st){ RATINGS.forEach(r=>paintOne(prefix,r.k,st.ratings[r.k])); }
+function buildChips(el,prefix,st){
+  el.innerHTML=EFFECTS.map((f,i)=>`<button type="button" class="chipbtn" id="${prefix}fx-${i}" data-f="${f}" aria-pressed="false">${f}</button>`).join("");
+  el.addEventListener("click",e=>{
+    const b=e.target.closest("button[data-f]"); if(!b) return;
+    const f=b.dataset.f;
+    if(f==="None"){ st.effects=new Set(st.effects.has("None")?[]:["None"]); }
+    else { st.effects.delete("None"); st.effects.has(f)?st.effects.delete(f):st.effects.add(f); }
+    paintChips(el,st);
+  });
+}
+function paintChips(el,st){ el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",st.effects.has(b.dataset.f)?"true":"false")); }
+buildRatings($("ratings"),"r",fstate); buildChips($("fxChips"),"f",fstate);
+buildRatings($("ciRatings"),"c",cstate); buildChips($("ciFx"),"c",cstate);
+$("f-date").value=today(); $("ci-date").value=today();
+
+// Every rating a fill has: its first-day ratings plus each daily check-in.
+function logsOf(e){
+  const out=[];
+  if(e.ratings && Object.keys(e.ratings).length) out.push({date:e.date,ratings:e.ratings,effects:e.effects||[],note:"",first:true});
+  (e.checkins||[]).forEach(c=>out.push(c));
+  return out.sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+}
+function fillAvg(e){
+  const logs=logsOf(e), r={};
+  ALLR.forEach(x=>{ const a=avg(logs.map(l=>l.ratings?.[x.k])); if(a!=null) r[x.k]=a; });
+  return {r,n:logs.length};
+}
+function effectCounts(e){
+  const c={}; logsOf(e).forEach(l=>(l.effects||[]).forEach(f=>{ if(f!=="None") c[f]=(c[f]||0)+1; }));
+  (e.effects||[]).forEach(f=>{ if(f!=="None" && !c[f]) c[f]=1; });
+  return Object.entries(c).sort((a,b)=>b[1]-a[1]);
+}
+
+function list(){ return usingExamples?EXAMPLES:entries; }
+function sorted(){ return [...list()].sort((a,b)=>(b.date||"").localeCompare(a.date||"")); }
+
+// Check-in form
+function renderCheckinSelect(){
+  const rows=sorted(), prev=$("ci-fill").value;
+  $("ci-fill").innerHTML=rows.map(e=>`<option value="${esc(e.id)}">${esc(fmtDate(e.date))} · ${esc(e.mfr)} · ${esc(shortMed(e.med))} ${esc(e.dose)}</option>`).join("")||`<option value="">Add a fill first</option>`;
+  if(rows.some(e=>e.id===prev)) $("ci-fill").value=prev;
+  renderCiCount();
+}
+function renderCiCount(){
+  const e=list().find(x=>x.id===$("ci-fill").value);
+  if(!e){ $("ciCount").innerHTML=""; return; }
+  const {r,n}=fillAvg(e);
+  $("ciCount").innerHTML=`<b style="color:${col(r.overall)}">${fmt1(r.overall)}</b><span>average from <strong>${n}</strong> day${n===1?"":"s"} logged on this fill</span>`;
+}
+$("ci-fill").addEventListener("change",()=>{ renderCiCount(); loadDayIntoCi(); });
+$("ci-date").addEventListener("change",loadDayIntoCi);
+// If today already has a check-in, show it so it can be adjusted instead of duplicated.
+function loadDayIntoCi(){
+  const e=list().find(x=>x.id===$("ci-fill").value), d=$("ci-date").value;
+  const c=(e?.checkins||[]).find(x=>x.date===d);
+  cstate.ratings={...(c?.ratings||{})}; cstate.effects=new Set(c?.effects||[]); $("ci-note").value=c?.note||"";
+  paintRatings("c",cstate); paintChips($("ciFx"),cstate);
+  $("ciSave").textContent=c?"Update this day":"Save check-in";
+}
+// Pop-up confirmation at the bottom of the screen
+let toastTimer;
+function toast(msg,err){
+  const t=$("toast"); t.textContent=(err?"":"✓ ")+msg; t.classList.toggle("err",!!err);
+  t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),3000);
+}
+// Turn a button green with a short "Saved" label, then put its normal label back
+function flashSaved(btn,label,after){
+  btn.textContent=label; btn.classList.add("saved"); clearTimeout(btn._flash);
+  btn._flash=setTimeout(()=>{ btn.classList.remove("saved"); btn.textContent=after; },2000);
+}
+function setCiMsg(t,err){ $("ciMsg").textContent=t; $("ciMsg").className="msg"+(err?" err":""); }
+$("ciForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();
+  const id=$("ci-fill").value, d=$("ci-date").value;
+  const e=entries.find(x=>x.id===id);
+  if(!e){ setCiMsg(usingExamples?"Add your first fill below, then check in on it.":"Choose a fill.",true); return; }
+  if(!d){ setCiMsg("Pick the day.",true); return; }
+  if(!Object.keys(cstate.ratings).length){ setCiMsg("Rate at least one thing. Overall is a good start.",true); return; }
+  if(!db){ setCiMsg("Saving isn't available in this view.",true); return; }
+  const cks=[...(e.checkins||[])], i=cks.findIndex(x=>x.date===d);
+  const item={id:i>=0?cks[i].id:"c"+Date.now().toString(36),date:d,ratings:{...cstate.ratings},effects:[...cstate.effects],note:$("ci-note").value.trim(),at:new Date().toISOString()};
+  if(i>=0) cks[i]=item; else cks.push(item);
+  $("ciSave").disabled=true; $("ciSave").textContent="Saving…";
+  try{ await db.doc("fills/"+id).update({checkins:cks,updatedAt:item.at}); setCiMsg(""); flashSaved($("ciSave"),i>=0?"Updated ✓":"Saved ✓","Update this day"); toast(`${fmtDate(d,true)} ${i>=0?"log updated":"check-in saved"}`); }
+  catch(err){ $("ciSave").textContent=i>=0?"Update this day":"Save check-in"; setCiMsg("Couldn't save. Check your connection and try again.",true); toast("Couldn't save. Try again.",true); }
+  finally{ $("ciSave").disabled=false; }
+});
+
+// Scoreboard: each fill counts once (its own daily average), so a month with 3 logs and a month with 20 weigh the same.
+function renderBoard(){
+  const groups={};
+  list().forEach(e=>{ const key=e.mfr+"||"+medLabel(e.med); (groups[key]??=[]).push(e); });
+  const keys=Object.keys(groups);
+  if(!keys.length){ $("board").innerHTML=`<p class="empty-note">No fills yet.</p>`; return; }
+  const cards=keys.map(key=>{
+    const g=groups[key], n=g[0].mfr, avgs=g.map(fillAvg);
+    const days=avgs.reduce((s,a)=>s+a.n,0);
+    const o=avg(avgs.map(a=>a.r.overall));
+    const yes=g.filter(e=>e.again==="yes").length, no=g.filter(e=>e.again==="no").length;
+    const bars=RATINGS.filter(r=>r.k!=="overall").map(r=>{const a=avg(avgs.map(x=>x.r[r.k])); return `<span>${r.s||r.t}</span><div class="bar"><i style="width:${a?a/5*100:0}%;--c:${col(a,r.neutral)}"></i></div><span class="tab mono">${fmt1(a)}</span>`;}).join("");
+    return {o:o??0,html:`<button type="button" class="mfr${filter===n?" active":""}" data-m="${esc(n)}" aria-pressed="${filter===n}" style="--c:${col(o)}">
+      <div class="mfr-top"><span><span class="mfr-name">${esc(n)}</span><span class="mfr-med">${esc(shortMed(g[0].med))}</span></span><span class="verdict">${verdict(o)}</span></div>
+      <div class="score tab">${fmt1(o)}<small> / 5 · ${g.length} fill${g.length>1?"s":""} · ${days} day${days===1?"":"s"} logged</small></div>
+      <div class="bars">${bars}</div>
+      <div class="msg">Would refill: ${yes} yes · ${no} no</div>
+    </button>`};
+  }).sort((a,b)=>b.o-a.o);
+  $("board").innerHTML=cards.map(c=>c.html).join("");
+}
+$("board").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-m]"); if(!b) return;
+  filter = filter===b.dataset.m ? "" : b.dataset.m;
+  renderAll();
+});
+$("filterMfr").addEventListener("change",()=>{ filter=$("filterMfr").value; renderAll(); });
+function renderFilter(){
+  const names=[...new Set(list().map(e=>e.mfr))].sort();
+  $("filterMfr").innerHTML=`<option value="">All manufacturers</option>`+names.map(n=>`<option value="${esc(n)}" ${n===filter?"selected":""}>${esc(n)}</option>`).join("");
+}
+
+function pips(v,neutral){ return `<span class="pip" aria-hidden="true" style="--c:${col(v,neutral)}">${[1,2,3,4,5].map(n=>`<i class="${Math.round(v||0)>=n?"f":""}"></i>`).join("")}</span>`; }
+function dayRow(e,l){
+  const o=l.ratings?.overall;
+  const mini=ALLR.filter(r=>r.k!=="overall"&&l.ratings?.[r.k]!=null).map(r=>`<span>${r.s||r.t} <b>${l.ratings[r.k]}</b></span>`).join("");
+  const fx=(l.effects||[]).filter(f=>f!=="None");
+  const key=e.id+"|"+l.id;
+  const acts=e.example||l.first?"":(pendingDay===key
+    ?`<span class="confirm">Remove? <button class="btn small danger" data-act="dayconfirm" data-id="${e.id}" data-cid="${l.id}">Remove</button><button class="btn small" data-act="daykeep">Keep</button></span>`
+    :`<span class="acts"><button class="btn small" data-act="dayedit" data-id="${e.id}" data-date="${l.date}">Adjust</button><button class="btn small danger" data-act="daydel" data-id="${e.id}" data-cid="${l.id}">Remove</button></span>`);
+  return `<div class="day" style="--c:${col(o)}">
+    <span class="d">${esc(fmtDate(l.date,true))}${l.first?' <span class="msg">(fill day)</span>':""}</span>
+    <span class="mini">${o!=null?`<span>Overall <b>${o}</b></span>`:""}${mini}${fx.length?`<span>· ${esc(fx.join(", "))}</span>`:""}</span>
+    ${acts}
+    ${l.note?`<span class="dnote">${esc(l.note)}</span>`:""}
+  </div>`;
+}
+function renderEntries(){
+  const rows=sorted().filter(e=>!filter||e.mfr===filter);
+  if(!rows.length){ $("entries").innerHTML=`<p class="empty-note">No fills for this manufacturer yet.</p>`; return; }
+  $("entries").innerHTML=rows.map(e=>{
+    const {r,n}=fillAvg(e), o=r.overall, logs=logsOf(e), fx=effectCounts(e);
+    return `
+    <article class="entry" style="--c:${col(o)}">
+      <div class="rx">
+        <span class="mono">Rx · ${esc(e.ndc||"NDC not noted")}</span>
+        <span class="when">${fmtDate(e.date)}</span>
+        <strong>${esc(e.mfr)}</strong>
+        <span>${esc(shortMed(e.med))} ${esc(e.dose)} ${esc((e.form||"").split(" ")[0])}</span>
+        <span class="msg">${esc(e.pharmacy)}</span>
+        <span class="grade">${o!=null?fmt1(o)+" / 5 · ":""}${verdict(o)}</span>
+      </div>
+      <div class="body">
+        <span class="basis">${n?`Average of ${n} day${n===1?"":"s"} you logged`:"No ratings yet. Check in when you're ready."}</span>
+        ${n?`<div class="scores">${ALLR.filter(x=>x.k!=="overall"&&r[x.k]!=null).map(x=>`<span>${x.s||x.t} <b>${fmt1(r[x.k])}</b>${pips(r[x.k],x.neutral)}</span>`).join("")}</div>`:""}
+        ${fx.length?`<div class="fx">${fx.map(([f,c])=>`<span>${esc(f)}${c>1?" ×"+c:""}</span>`).join("")}</div>`:""}
+        ${e.notes?`<p class="note">${esc(e.notes)}</p>`:""}
+        ${logs.length?`<details class="days"><summary>${logs.length} daily log${logs.length===1?"":"s"}</summary><div class="daylist">${logs.map(l=>dayRow(e,l)).join("")}</div></details>`:""}
+        <div class="entry-foot">
+          <span>Would refill: <strong>${esc(e.again||"not sure yet")}</strong> ${e.example?'<span class="example-tag">Example</span>':""}</span>
+          ${e.example?"":(pendingDelete===e.id
+            ?`<span class="confirm">Delete this fill and its daily logs? <button class="btn small danger" data-act="confirm" data-id="${e.id}">Delete</button><button class="btn small" data-act="keep">Keep</button></span>`
+            :`<span class="acts"><button class="btn small" data-act="checkin" data-id="${e.id}">Check in</button><button class="btn small" data-act="edit" data-id="${e.id}">Edit fill</button><button class="btn small danger" data-act="del" data-id="${e.id}">Delete</button></span>`)}
+        </div>
+      </div>
+    </article>`;}).join("");
+}
+document.addEventListener("click",async ev=>{
+  if(!ev.target.closest("#entries,#ovList")) return;
+  const b=ev.target.closest("button[data-act]"); if(!b) return;
+  const act=b.dataset.act, id=b.dataset.id;
+  if(act==="checkin"){ $("ci-fill").value=id; $("ci-date").value=today(); renderCiCount(); loadDayIntoCi(); $("ciForm").scrollIntoView({behavior:"smooth",block:"start"}); }
+  else if(act==="dayedit"){ $("ci-fill").value=id; $("ci-date").value=b.dataset.date; renderCiCount(); loadDayIntoCi(); $("ciForm").scrollIntoView({behavior:"smooth",block:"start"}); }
+  else if(act==="edit"){ startEdit(id); }
+  else if(act==="del"){ pendingDelete=id; renderEntries(); }
+  else if(act==="keep"){ pendingDelete=null; renderEntries(); }
+  else if(act==="confirm"){ pendingDelete=null; try{ await db.doc("fills/"+id).delete(); toast("Fill deleted"); }catch(err){ setMsg("Couldn't delete that fill. Try again.",true); toast("Couldn't delete that fill.",true); } }
+  else if(act==="daydel"){ pendingDay=id+"|"+b.dataset.cid; renderEntries(); renderOverview(); keepOpen(id); }
+  else if(act==="daykeep"){ pendingDay=null; renderEntries(); renderOverview(); }
+  else if(act==="dayconfirm"){
+    pendingDay=null; const e=entries.find(x=>x.id===id); if(!e) return;
+    try{ await db.doc("fills/"+id).update({checkins:(e.checkins||[]).filter(c=>c.id!==b.dataset.cid)}); toast("Day removed"); }catch(err){ setCiMsg("Couldn't remove that day. Try again.",true); toast("Couldn't remove that day.",true); }
+  }
+});
+function keepOpen(id){ const art=[...document.querySelectorAll(".entry")].find(a=>a.querySelector(`[data-id="${CSS.escape(id)}"]`)); art?.querySelector("details.days")?.setAttribute("open",""); }
+
+
+// ---- Current med overview ----
+function scopeOptions(){
+  const rows=sorted(), opts=[], meds=[];
+  rows.forEach(e=>{ const m=medLabel(e.med); if(!meds.includes(m)) meds.push(m); });
+  meds.forEach(m=>{
+    const fills=rows.filter(e=>medLabel(e.med)===m);
+    opts.push({v:"med:"+m,t:`All ${shortMed(m)} fills (${fills.length})`,group:shortMed(m)});
+    fills.forEach(e=>opts.push({v:"fill:"+e.id,t:`${fmtDate(e.date)} fill · ${e.mfr} ${e.dose||""}`,group:shortMed(m)}));
+  });
+  return opts;
+}
+function scopeLogs(v){
+  const rows=sorted();
+  if(v.startsWith("fill:")){ const e=rows.find(x=>x.id===v.slice(5)); return e?logsOf(e).map(l=>({...l,_e:e})):[]; }
+  const m=v.slice(4);
+  return rows.filter(e=>medLabel(e.med)===m).flatMap(e=>logsOf(e).map(l=>({...l,_e:e}))).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+}
+function ringSVG(frac,center,unit,c,label){
+  const r=36, C=2*Math.PI*r, f=Math.max(0,Math.min(1,frac||0));
+  return `<svg viewBox="0 0 84 84" role="img" aria-label="${esc(label)}" style="--c:${c}"><circle class="track" cx="42" cy="42" r="${r}"/>${f>0?`<circle class="arc" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>`:""}<text class="val" x="42" y="${unit?44:48}" text-anchor="middle"${String(center).length>3?' style="font-size:16px"':""}>${center}</text>${unit?`<text class="unit" x="42" y="58" text-anchor="middle">${unit}</text>`:""}</svg>`;
+}
+let ovScope="";
+function renderOverview(){
+  const opts=scopeOptions();
+  if(!opts.length){ $("ov-scope").innerHTML=""; ["ovRatings","ovFx","ovDays","ovList"].forEach(i=>$(i).innerHTML=""); $("ovSum").textContent="Add a fill to see it here."; return; }
+  if(!opts.some(o=>o.v===ovScope)){ const latest=sorted()[0]; ovScope="fill:"+latest.id; }
+  const groups=[...new Set(opts.map(o=>o.group))];
+  $("ov-scope").innerHTML=groups.map(g=>`<optgroup label="${esc(g)}">${opts.filter(o=>o.group===g).map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("")}</optgroup>`).join("");
+  $("ov-scope").value=ovScope;
+  const logs=scopeLogs(ovScope), n=logs.length;
+  const o=avg(logs.map(l=>l.ratings?.overall));
+  $("ovSum").innerHTML=n?`<b style="color:${col(o)}">${fmt1(o)}</b> overall · <strong>${n}</strong> day${n===1?"":"s"} logged${n>1?` · ${esc(fmtDate(logs[0].date))} – ${esc(fmtDate(logs[n-1].date))}`:""}`:"No days logged yet. Check in above.";
+  // Rating rings: average out of 5
+  $("ovRatings").innerHTML=n?ALLR.filter(r=>logs.some(l=>l.ratings?.[r.k]!=null)).map(r=>{
+    const vals=logs.map(l=>l.ratings?.[r.k]).filter(v=>typeof v==="number"), a=avg(vals);
+    const tip=r.neutral?`Appetite ${fmt1(a)} (3 = normal) · ${vals.length} day${vals.length===1?"":"s"}`:`${r.s||r.t} ${fmt1(a)} of 5 · rated on ${vals.length} day${vals.length===1?"":"s"}`;
+    return `<div class="ring" tabindex="0">${ringSVG(a/5,fmt1(a),"of 5",col(a,r.neutral),tip)}<strong>${r.s||r.t}</strong><span>${vals.length} day${vals.length===1?"":"s"}</span><span class="tip">${esc(tip)}</span></div>`;
+  }).join(""):`<p class="empty-note">No ratings yet.</p>`;
+  // Side-effect rings: % of logged days
+  const counts={}; logs.forEach(l=>new Set((l.effects||[]).filter(f=>f!=="None")).forEach(f=>counts[f]=(counts[f]||0)+1));
+  const fx=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  $("ovFx").innerHTML=fx.length?fx.map(([f,c])=>{
+    const pct=Math.round(c/n*100), tip=`${f} on ${c} of ${n} logged days`;
+    return `<div class="ring" tabindex="0">${ringSVG(c/n,pct+"%","",`var(--amber)`,tip)}<strong>${esc(f)}</strong><span>${c} of ${n} day${n===1?"":"s"}</span><span class="tip">${esc(tip)}</span></div>`;
+  }).join(""):`<p class="empty-note">${n?"No side effects logged.":"Nothing yet."}</p>`;
+  // Timeline + full list
+  $("ovDays").innerHTML=logs.map(l=>{ const v=l.ratings?.overall; const [,m,d]=(l.date||"--").split("-"); return `<span class="tday" style="--c:${col(v)}" title="${esc(fmtDate(l.date))}${v!=null?" · overall "+v:""}"><i></i><b>${v??"–"}</b>${+m}/${+d}</span>`; }).join("");
+  $("ovListSum").textContent=`See every day (${n})`;
+  $("ovList").innerHTML=logs.slice().reverse().map(l=>dayRow(l._e,l)).join("");
+}
+$("ov-scope").addEventListener("change",()=>{ ovScope=$("ov-scope").value; renderOverview(); });
+function renderAll(){ renderBoard(); renderFilter(); renderEntries(); renderCheckinSelect(); renderOverview(); }
+
+// New fill / edit fill
+function setMsg(t,err){ $("formMsg").textContent=t; $("formMsg").className="msg"+(err?" err":""); }
+function resetForm(){
+  editingId=null; fstate.ratings={}; fstate.effects=new Set();
+  ["f-dose","f-ndc","f-notes","f-mfr-other","f-med-other"].forEach(i=>$(i).value="");
+  $("f-mfr").value=""; $("otherWrap").hidden=true; $("medOtherWrap").hidden=$("f-med").value!=="Other"; $("f-again").value="";
+  $("f-date").value=today();
+  $("saveBtn").textContent="Save fill"; $("cancelEdit").hidden=true; $("formTitle").textContent="Add a new fill";
+  $("fRateHint").textContent="Skip these if it's too early to tell. You can check in later.";
+  paintRatings("r",fstate); paintChips($("fxChips"),fstate);
+}
+function startEdit(id){
+  const e=entries.find(x=>x.id===id); if(!e) return;
+  editingId=id;
+  $("f-date").value=e.date||"";
+  const m=matchMed(e.med); $("f-med").value=m||"Other"; $("medOtherWrap").hidden=!!m; $("f-med-other").value=m?"":(e.med||"");
+  const formKnown=[...$("f-form").options].some(o=>o.value===e.form); $("f-form").value=formKnown?e.form:"IR (instant release)";
+  $("f-dose").value=e.dose||""; $("f-ndc").value=e.ndc||""; $("f-pharm").value=e.pharmacy||""; $("f-notes").value=e.notes||""; $("f-again").value=e.again||"";
+  const known=[...$("f-mfr").options].some(o=>o.value===e.mfr);
+  $("f-mfr").value=known?e.mfr:"Other"; $("otherWrap").hidden=known; $("f-mfr-other").value=known?"":e.mfr;
+  fstate.ratings={...(e.ratings||{})}; fstate.effects=new Set(e.effects||[]);
+  paintRatings("r",fstate); paintChips($("fxChips"),fstate);
+  $("saveBtn").textContent="Save changes"; $("cancelEdit").hidden=false; $("formTitle").textContent="Edit fill";
+  $("fRateHint").textContent="These are the fill-day ratings. Daily check-ins are kept separately.";
+  $("fillPanel").open=true;
+  $("fillPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("cancelEdit").addEventListener("click",()=>{ resetForm(); setMsg(""); });
+
+$("entryForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();
+  let mfr=$("f-mfr").value; if(mfr==="Other") mfr=$("f-mfr-other").value.trim();
+  let med=$("f-med").value; if(med==="Other") med=$("f-med-other").value.trim();
+  if(!$("f-date").value){ setMsg("Add the fill date.",true); return; }
+  if(!med){ setMsg("Enter the medication name.",true); return; }
+  if(!mfr){ setMsg("Choose the manufacturer on the label.",true); return; }
+  if(!db){ setMsg("Saving isn't available in this view.",true); return; }
+  const now=new Date().toISOString();
+  const doc={date:$("f-date").value,med,form:$("f-form").value,dose:$("f-dose").value.trim(),mfr,
+    ndc:$("f-ndc").value.trim(),pharmacy:$("f-pharm").value.trim(),ratings:{...fstate.ratings},effects:[...fstate.effects],
+    again:$("f-again").value,notes:$("f-notes").value.trim(),updatedAt:now};
+  $("saveBtn").disabled=true;
+  try{
+    if(editingId){
+      const prev=entries.find(x=>x.id===editingId);
+      await db.doc("fills/"+editingId).set({...doc,checkins:prev?.checkins||[],...(prev?.createdAt?{createdAt:prev.createdAt}:{})});
+      setMsg(""); toast("Fill updated");
+    } else {
+      const ref=await db.collection("fills").add({...doc,checkins:[],createdAt:now});
+      setMsg(""); toast("Fill saved. Check in on it any day above.");
+      $("ci-fill").dataset.want=ref.id;
+    }
+    const keepPharm=$("f-pharm").value, keepDose=$("f-dose").value, keepMed=$("f-med").value;
+    resetForm(); $("f-pharm").value=keepPharm; $("f-dose").value=keepDose; $("f-med").value=keepMed; $("medOtherWrap").hidden=keepMed!=="Other";
+  }catch(err){
+    setMsg(err?.code==="quota_exceeded"?"The log is full. Delete old fills to add more.":"Couldn't save. Check your connection and try again.",true);
+  }finally{ $("saveBtn").disabled=false; }
+});
+
+// CSV export: one row per logged day
+function toCSV(){
+  const cols=["fill_date","med","form","dose","mfr","ndc","pharmacy","log_date",...ALLR.map(r=>r.k),"effects","note","would_refill","fill_notes"];
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=[];
+  entries.forEach(e=>{
+    const logs=logsOf(e); (logs.length?logs:[{date:"",ratings:{},effects:e.effects||[]}]).forEach(l=>{
+      rows.push([e.date,e.med,e.form,e.dose,e.mfr,e.ndc,e.pharmacy,l.date,...ALLR.map(r=>l.ratings?.[r.k]),(l.effects||[]).join("; "),l.note||"",e.again,e.notes].map(q).join(","));
+    });
+  });
+  return [cols.join(","),...rows].join("\n");
+}
+function saveFile(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+$("backupBtn").addEventListener("click",()=>saveFile("fill-log-backup.json",backupJSON(),"application/json"));
+// ---- Backup: move fills + daily logs between the Claude version and the computer version ----
+const ID_OK=/^[A-Za-z0-9_\-.~:@+]{1,200}$/;
+function backupJSON(){
+  return JSON.stringify({app:"fill-log",version:1,exportedAt:new Date().toISOString(),fills:entries.map(e=>({...e}))},null,2);
+}
+function stripId(e){ const {id,...d}=e; return d; }
+// Keep the newer copy of each fill, and merge daily logs day by day (newer wins per day).
+// Older data used appetite 1 = no appetite ... 5 = always hungry. Scale v2 flips it
+// so 5 = the good end (less hunger), like every other rating.
+function upgradeScale(d){
+  if((d.scaleVersion||1)>=2) return d;
+  const flip=r=>(r&&typeof r.appetite==="number")?{...r,appetite:6-r.appetite}:r;
+  return {...d,scaleVersion:2,ratings:flip(d.ratings),checkins:(d.checkins||[]).map(c=>({...c,ratings:flip(c.ratings)}))};
+}
+function mergeFill(cur,inc){
+  if(!cur) return inc;
+  const newer=(inc.updatedAt||"")>(cur.updatedAt||"")?inc:cur;
+  const byDate=new Map();
+  [...(cur.checkins||[]),...(inc.checkins||[])].forEach(c=>{ const p=byDate.get(c.date); if(!p||(c.at||"")>(p.at||"")) byDate.set(c.date,c); });
+  return {...newer,checkins:[...byDate.values()].sort((a,b)=>(a.date||"").localeCompare(b.date||""))};
+}
+function setIo(t,err){ $("ioMsg").textContent=t; $("ioMsg").className="msg"+(err?" err":""); }
+$("importBtn").addEventListener("click",()=>{ if(!db){ setIo("Importing isn't available in this view.",true); return; } $("importFile").click(); });
+$("importFile").addEventListener("change",async()=>{
+  const file=$("importFile").files[0]; $("importFile").value=""; if(!file) return;
+  let data;
+  try{ data=JSON.parse(await file.text()); }catch(e){ setIo("That file isn't a Fill Log backup. Choose the fill-log-backup .json file.",true); return; }
+  const fills=Array.isArray(data?.fills)?data.fills:null;
+  if(data?.app!=="fill-log"||!fills){ setIo("That file isn't a Fill Log backup. Choose the fill-log-backup .json file.",true); return; }
+  let added=0, updated=0, same=0, skipped=0;
+  setIo("Importing…");
+  for(const f of fills){
+    if(!f||typeof f!=="object"||!ID_OK.test(String(f.id||""))||!f.mfr||!f.date){ skipped++; continue; }
+    const cur=entries.find(e=>e.id===f.id);
+    const merged=mergeFill(cur?stripId(cur):null,upgradeScale(stripId(f)));
+    if(cur && JSON.stringify(stripId(cur))===JSON.stringify(merged)){ same++; continue; }
+    try{ await db.doc("fills/"+f.id).set(merged); cur?updated++:added++; }
+    catch(e){ setIo("Stopped partway: couldn't save a fill. Try importing again; nothing already saved will double up.",true); return; }
+  }
+  toast(`Imported ${added} new, ${updated} updated`);
+  setIo(`Imported: ${added} new fill${added===1?"":"s"}, ${updated} updated, ${same} already up to date${skipped?`, ${skipped} skipped`:""}.`);
+});
+$("exportBtn").addEventListener("click",()=>{
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([toCSV()],{type:"text/csv"})); a.download="fill-log.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+function setStatus(on,text){ $("statusDot").className="dot"+(on?" on":""); $("statusText").textContent=text; }
+renderAll(); loadDayIntoCi(); setStatus(false,"Showing examples");
+$("fillPanel").open=true;
+
+// ---- Storage: Supabase ----
+// Same small interface the rest of the page uses (collection().add / onSnapshot,
+// doc().set / update / delete). Each fill is one row in the "fills" table; row-level
+// security means every account only ever sees its own rows.
+const SUPABASE_URL="https://oahwdycnbldeejujdxfd.supabase.co";
+const SUPABASE_KEY="sb_publishable_GC5o4cVrHPNNWmHueTR8cg_VpjrD36z";  // publishable key: safe in a web page
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function supaDB(userId){
+  let docs=new Map();
+  const subs=new Set();
+  const snap=()=>({docs:[...docs].map(([id,d])=>({id,data:()=>d}))});
+  const emit=()=>subs.forEach(f=>f(snap()));
+  async function refresh(){
+    const {data,error}=await sb.from("fills").select("id,doc");
+    if(error){ setStatus(false,"Couldn't load your logs. Check your connection."); return; }
+    docs=new Map(data.map(r=>[r.id,r.doc])); emit(); setStatus(true,"Synced to your account");
+    // One-time upgrade of older fills to the current rating scale (appetite flipped).
+    const old=[...docs].filter(([,d])=>(d.scaleVersion||1)<2);
+    for(const [id,d] of old){ try{ await put(id,upgradeScale(d)); }catch(e){ break; } }
+  }
+  async function put(id,d){
+    d={...d,scaleVersion:2};
+    const {error}=await sb.from("fills").upsert({id,user_id:userId,doc:d,updated_at:new Date().toISOString()},{onConflict:"user_id,id"});
+    if(error) throw {code:"unavailable",message:error.message};
+    docs.set(id,d); emit();
+  }
+  // Pick up changes made on another device when you come back to this tab, and every minute while open.
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) refresh(); });
+  setInterval(()=>{ if(!document.hidden) refresh(); },60000);
+  return {
+    refresh,
+    collection(){ return {
+      add:async d=>{ const id="d"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); await put(id,d); return {id}; },
+      onSnapshot(fn){ subs.add(fn); refresh(); return ()=>subs.delete(fn); }
+    }; },
+    doc(p){ const id=p.split("/")[1]; return {
+      set:d=>put(id,d),
+      update:d=>put(id,{...(docs.get(id)||{}),...d}),
+      delete:async()=>{ const {error}=await sb.from("fills").delete().eq("id",id); if(error) throw {code:"unavailable",message:error.message}; docs.delete(id); emit(); }
+    }; }
+  };
+}
+
+let started=false;
+function startApp(user){
+  if(started) return; started=true;
+  $("authCard").hidden=true; $("app").hidden=false; $("signOutBtn").hidden=false;
+  setStatus(false,"Loading your logs…");
+  db=supaDB(user.id);
+  let first=true;
+  db.collection("fills").onSnapshot(snap=>{
+    entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+    usingExamples=entries.length===0;
+    $("exportBtn").hidden=usingExamples; $("backupBtn").hidden=usingExamples;
+    if(filter && !list().some(e=>e.mfr===filter)) filter="";
+    const openDays=[...document.querySelectorAll(".entry details.days[open]")].map(d=>d.closest(".entry").querySelector("[data-id]")?.dataset.id);
+    renderAll();
+    openDays.forEach(id=>id&&keepOpen(id));
+    const want=$("ci-fill").dataset.want;
+    if(want && entries.some(e=>e.id===want)){ $("ci-fill").value=want; delete $("ci-fill").dataset.want; }
+    renderCiCount();
+    if(first){ first=false; $("fillPanel").open=usingExamples; loadDayIntoCi(); }
+  });
+}
+function showSignIn(){
+  started=false; db=null; entries=[];
+  $("app").hidden=true; $("authCard").hidden=false; $("signOutBtn").hidden=true;
+  setStatus(false,"Signed out");
+}
+
+// ---- Sign in / create account ----
+function setAuth(t,err){ $("authMsg").textContent=t; $("authMsg").className="msg"+(err?" err":""); }
+function creds(){
+  const email=$("au-email").value.trim(), password=$("au-pass").value;
+  if(!email||!email.includes("@")){ setAuth("Enter your email address.",true); return null; }
+  if(password.length<8){ setAuth("Use a password with at least 8 characters.",true); return null; }
+  return {email,password};
+}
+$("authForm").addEventListener("submit",async ev=>{
+  ev.preventDefault(); const c=creds(); if(!c) return;
+  $("signInBtn").disabled=true; setAuth("Signing in…");
+  const {error}=await sb.auth.signInWithPassword(c);
+  $("signInBtn").disabled=false;
+  if(error){
+    const m=(error.message||"").toLowerCase();
+    setAuth(m.includes("confirm")?"Confirm your email first: open the link Supabase sent you, then sign in here.":
+            m.includes("invalid")?"That email and password don't match. Check them, or create an account.":error.message,true);
+  }
+});
+$("signUpBtn").addEventListener("click",async()=>{
+  const c=creds(); if(!c) return;
+  $("signUpBtn").disabled=true; setAuth("Creating your account…");
+  const {data,error}=await sb.auth.signUp(c);
+  $("signUpBtn").disabled=false;
+  if(error){ setAuth(error.message,true); return; }
+  if(data.session) setAuth("Account created.");
+  else setAuth("Check your email and click the confirmation link. If the page it opens doesn't load, that's fine. Come back here and click Sign in.");
+});
+$("signOutBtn").addEventListener("click",async()=>{ await sb.auth.signOut(); });
+
+sb.auth.onAuthStateChange((event,session)=>{ if(session?.user) startApp(session.user); else if(event==="SIGNED_OUT") showSignIn(); });
+sb.auth.getSession().then(({data})=>{ if(data.session?.user) startApp(data.session.user); else showSignIn(); });
+</script>
+
+</body>
+</html>
