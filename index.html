@@ -35,6 +35,9 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+:root{--g-glass:color-mix(in srgb,var(--chip) 65%,transparent);--g-shine:rgba(255,255,255,.55);--g-rim:rgba(0,0,0,.06)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g-shine:rgba(255,255,255,.3);--g-rim:rgba(255,255,255,.14)}}
+:root[data-theme="dark"]{--g-shine:rgba(255,255,255,.3);--g-rim:rgba(255,255,255,.14)}
 .toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top, 0px));transform:translate(-50%,-16px);white-space:nowrap;opacity:0;pointer-events:none;z-index:50;
   background:var(--good);color:var(--on-accent);font-weight:600;font-size:15px;padding:12px 18px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.25);
   max-width:calc(100% - 32px);text-align:center;transition:opacity .2s ease,transform .2s ease}
@@ -89,9 +92,9 @@
 @media (prefers-reduced-motion:reduce){.gauge input[type=range]::-webkit-slider-thumb{transition:none}}
 .ticks{display:flex;justify-content:space-between;padding:0 15px;height:22px;margin-top:1px}
 .ticks span{position:relative;width:0;display:flex;flex-direction:column;align-items:center}
-.ticks i{display:block;width:1.5px;height:5px;background:var(--line)}
-.ticks .w i{height:8px;background:var(--muted)}
-.ticks b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);line-height:1;margin-top:3px}
+.ticks i{display:block;width:1.5px;height:5px;background:var(--tc);opacity:.55}
+.ticks .w i{height:8px;width:2px;opacity:1}
+.ticks b{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tc);line-height:1;margin-top:3px}
 
 .auth{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:12px;padding:24px 20px;display:flex;flex-direction:column;gap:14px;max-width:440px;width:100%;margin:0 auto}
 .auth p{margin:0;color:var(--muted);font-size:14px}
@@ -142,8 +145,8 @@ button{font:inherit;cursor:pointer}
 .score small{font-size:13px;color:var(--muted);font-family:var(--body);font-weight:500}
 .verdict{flex:none;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--c);color:var(--on-accent)}
 .bars{display:grid;grid-template-columns:auto 1fr auto;gap:5px 8px;align-items:center;font-size:12px;color:var(--muted)}
-.bar{height:7px;border-radius:4px;background:var(--chip);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--c);border-radius:4px}
+.bar{height:10px;border-radius:5px;overflow:hidden;background:linear-gradient(to bottom,var(--g-shine),rgba(255,255,255,0) 60%),var(--g-glass);box-shadow:inset 0 0 0 1px var(--g-rim),inset 0 1px 3px rgba(0,0,0,.25)}
+.bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(to bottom,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),color-mix(in srgb,var(--c) 85%,transparent);box-shadow:inset 0 -1px 2px rgba(0,0,0,.18),0 0 6px color-mix(in srgb,var(--c) 35%,transparent)}
 .empty-note{color:var(--muted);font-size:14px;margin:0}
 
 /* Forms */
@@ -191,8 +194,8 @@ textarea{min-height:70px;resize:vertical}
 .scores > span{display:flex;align-items:center;gap:8px}
 .scores b{font-family:var(--mono);font-weight:500;min-width:1ch}
 .pip{display:inline-flex;gap:2px}
-.pip i{width:8px;height:8px;border-radius:2px;background:var(--chip)}
-.pip i.f{background:var(--c)}
+.pip i{width:9px;height:9px;border-radius:50%;background:var(--g-glass);box-shadow:inset 0 0 0 1px var(--g-rim),inset 0 1px 2px rgba(0,0,0,.2)}
+.pip i.f{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 55%),var(--c);box-shadow:inset 0 -1px 2px rgba(0,0,0,.2),0 0 4px color-mix(in srgb,var(--c) 45%,transparent)}
 .fx{display:flex;flex-wrap:wrap;gap:4px}
 .fx span{font-size:12px;background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:2px 9px;font-weight:500}
 .note{font-size:14px;color:var(--ink);margin:0;overflow-wrap:anywhere;white-space:pre-line}
@@ -229,8 +232,13 @@ textarea{min-height:70px;resize:vertical}
 .rings{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px 10px}
 .ring{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;color:var(--muted)}
 .ring svg{width:84px;height:84px;display:block}
-.ring .track{fill:none;stroke:var(--chip);stroke-width:9}
-.ring .arc{fill:none;stroke:var(--c);stroke-width:9;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dasharray .5s ease}
+.ring .track{fill:none;stroke:var(--g-glass);stroke-width:10}
+.ring .rim{fill:none;stroke:var(--g-rim);stroke-width:1}
+.ring .arc{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--c) 45%,transparent))}
+.ring .shine{fill:none;stroke:rgba(255,255,255,.5);stroke-width:2.5;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+.ring .bead-tint{fill:color-mix(in srgb,var(--c) 35%,transparent)}
+.ring .bead{fill:url(#fl-bead);stroke:rgba(255,255,255,.8);stroke-width:1.2}
+.ring .arc{fill:none;stroke:color-mix(in srgb,var(--c) 88%,transparent);stroke-width:10;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dasharray .5s ease}
 .ring .val{fill:var(--ink);font-family:var(--display);font-weight:700;font-size:20px}
 .ring .unit{fill:var(--muted);font-family:var(--body);font-size:10px}
 .ring strong{color:var(--ink);font-size:13px;font-weight:600}
@@ -239,7 +247,8 @@ textarea{min-height:70px;resize:vertical}
 .timeline{display:flex;flex-wrap:wrap;gap:6px}
 .tday{--c:var(--line);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;padding:6px 4px;border-radius:8px;background:color-mix(in srgb,var(--c) 14%,var(--bg));border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));font-size:11px;color:var(--muted)}
 .tday b{font-family:var(--mono);font-weight:500;font-size:14px;color:var(--ink)}
-.tday i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.tday i{width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(255,255,255,0) 55%),var(--c);box-shadow:inset 0 -1px 2px rgba(0,0,0,.2),0 0 5px color-mix(in srgb,var(--c) 50%,transparent)}
+.tday{background-image:linear-gradient(to bottom,var(--g-shine),rgba(255,255,255,0) 45%)!important;box-shadow:inset 0 0 0 1px var(--g-rim)}
 @media (max-width:620px){
   .entry{grid-template-columns:1fr}
   .rx{border-right:0;border-bottom:1px dashed color-mix(in srgb,var(--c) 60%,var(--line))}
@@ -410,6 +419,9 @@ textarea{min-height:70px;resize:vertical}
 </div>
 </div>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <radialGradient id="fl-bead" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></radialGradient>
+</defs></svg>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="supabase.js"></script>
 <script>
@@ -508,7 +520,7 @@ function buildRatings(el,prefix,st){
     <div class="gauge unset" id="${prefix}g-${r.k}">
       <input type="range" min="1" max="5" step="0.5" value="3" id="${prefix}-${r.k}" data-k="${r.k}"
         aria-label="${r.t}: 1 is ${r.lo}, 5 is ${r.hi}">
-      <div class="ticks" aria-hidden="true">${STEPS.map(n=>`<span class="${n%1?"h":"w"}"><i></i>${n%1?"":`<b>${n}</b>`}</span>`).join("")}</div>
+      <div class="ticks" aria-hidden="true">${STEPS.map(n=>`<span class="${n%1?"h":"w"}" style="--tc:${col(n)}"><i></i>${n%1?"":`<b>${n}</b>`}</span>`).join("")}</div>
     </div>
     <div class="scale-ends"><span>${r.lo}</span>${r.mid?`<span>${r.mid}</span>`:""}<span>${r.hi}</span></div>
   </div>`).join("");
@@ -742,7 +754,15 @@ function scopeLogs(v){
 }
 function ringSVG(frac,center,unit,c,label){
   const r=36, C=2*Math.PI*r, f=Math.max(0,Math.min(1,frac||0));
-  return `<svg viewBox="0 0 84 84" role="img" aria-label="${esc(label)}" style="--c:${c}"><circle class="track" cx="42" cy="42" r="${r}"/>${f>0?`<circle class="arc" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>`:""}<text class="val" x="42" y="${unit?44:48}" text-anchor="middle"${String(center).length>3?' style="font-size:16px"':""}>${center}</text>${unit?`<text class="unit" x="42" y="58" text-anchor="middle">${unit}</text>`:""}</svg>`;
+  const a=(-90+f*360)*Math.PI/180, bx=(42+r*Math.cos(a)).toFixed(1), by=(42+r*Math.sin(a)).toFixed(1);
+  const rs=r+2.6, Cs=2*Math.PI*rs;   // shine runs along the outer edge of the arc
+  return `<svg viewBox="-4 -4 92 92" role="img" aria-label="${esc(label)}" style="--c:${c}">
+    <circle class="track" cx="42" cy="42" r="${r}"/>
+    <circle class="rim" cx="42" cy="42" r="${r+5}"/><circle class="rim" cx="42" cy="42" r="${r-5}"/>
+    ${f>0?`<circle class="arc" cx="42" cy="42" r="${r}" stroke-dasharray="${(f*C).toFixed(1)} ${C.toFixed(1)}"/>
+    <circle class="shine" cx="42" cy="42" r="${rs}" stroke-dasharray="${Math.max(0,f*Cs-6).toFixed(1)} ${Cs.toFixed(1)}" stroke-dashoffset="-3"/>
+    <circle class="bead-tint" cx="${bx}" cy="${by}" r="6.5"/><circle class="bead" cx="${bx}" cy="${by}" r="6.5"/>`:""}
+    <text class="val" x="42" y="${unit?44:48}" text-anchor="middle"${String(center).length>3?' style="font-size:16px"':""}>${center}</text>${unit?`<text class="unit" x="42" y="58" text-anchor="middle">${unit}</text>`:""}</svg>`;
 }
 let ovScope="";
 function renderOverview(){
