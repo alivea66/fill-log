@@ -111,7 +111,8 @@ textarea{min-height:70px;resize:vertical}
 .rate{display:flex;flex-direction:column;gap:6px}
 .rate-head{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}
 .rate-head span{font-weight:600;color:var(--muted);font-size:12px}
-.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
+.seg button.half{font-size:11px;opacity:.9}
 .seg button{border:1px solid var(--line);border-bottom:3px solid var(--c);background:var(--bg);color:var(--ink);border-radius:6px;padding:6px 0;font-family:var(--mono);font-weight:500}
 .seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--on-accent)}
 .scale-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
@@ -363,12 +364,14 @@ textarea{min-height:70px;resize:vertical}
 <script>
 const RATINGS=[
   {k:"focus",t:"Focus",lo:"Scattered",hi:"Locked in"},
+  {k:"productivity",t:"Productivity",lo:"Got nothing done",hi:"Very productive"},
   {k:"duration",t:"How long it lasted",s:"Duration",lo:"Wore off fast",hi:"Full day"},
-  {k:"comedown",t:"Comedown",lo:"Hard crash",hi:"Smooth"},
+  {k:"comedown",t:"Comedown (mood)",s:"Comedown",lo:"Hard mood crash",hi:"Smooth"},
+  {k:"tiredness",t:"Tiredness",lo:"Physically exhausted",hi:"Full energy"},
   {k:"depression",t:"Depression",lo:"Very low",hi:"Not depressed"},
   {k:"irritability",t:"Irritability",lo:"Very irritable",hi:"Patient"},
   {k:"anxiety",t:"Anxiety",lo:"Very anxious",hi:"Calm"},
-  {k:"appetite",t:"Appetite",lo:"No appetite",mid:"Normal",hi:"Always hungry",neutral:true},
+  {k:"appetite",t:"Appetite",lo:"Always hungry",mid:"Normal",hi:"No appetite"},
   {k:"overall",t:"Overall",lo:"Didn't work",hi:"Worked great"}
 ];
 // Older fills rated a single "Mood" before it was split; still shown when present.
@@ -431,11 +434,12 @@ $("f-med").addEventListener("change",()=>{ $("medOtherWrap").hidden=$("f-med").v
 $("f-mfr").addEventListener("change",()=>{ $("otherWrap").hidden=$("f-mfr").value!=="Other"; });
 
 // Rating + chip controls, built for both forms
+const STEPS=[1,1.5,2,2.5,3,3.5,4,4.5,5];
 function buildRatings(el,prefix,st){
   el.innerHTML=RATINGS.map(r=>`
   <div class="rate">
     <div class="rate-head">${r.t}<span id="${prefix}v-${r.k}">not rated</span></div>
-    <div class="seg" role="group" aria-label="${r.t}">${[1,2,3,4,5].map(n=>`<button type="button" id="${prefix}-${r.k}-${n}" data-k="${r.k}" data-n="${n}" aria-pressed="false" style="--c:${col(n,r.neutral)}">${n}</button>`).join("")}</div>
+    <div class="seg" role="group" aria-label="${r.t}">${STEPS.map(n=>`<button type="button" class="${n%1?"half":""}" id="${prefix}-${r.k}-${n}" data-k="${r.k}" data-n="${n}" aria-pressed="false" aria-label="${n}" style="--c:${col(n,r.neutral)}">${n}</button>`).join("")}</div>
     <div class="scale-ends"><span>${r.lo}</span>${r.mid?`<span>${r.mid}</span>`:""}<span>${r.hi}</span></div>
   </div>`).join("");
   el.addEventListener("click",e=>{
@@ -448,7 +452,7 @@ function buildRatings(el,prefix,st){
 function paintRatings(prefix,st){
   RATINGS.forEach(r=>{
     const v=st.ratings[r.k];
-    for(let n=1;n<=5;n++) $(`${prefix}-${r.k}-${n}`).setAttribute("aria-pressed",v===n?"true":"false");
+    STEPS.forEach(n=>$(`${prefix}-${r.k}-${n}`).setAttribute("aria-pressed",v===n?"true":"false"));
     const lab=$(`${prefix}v-${r.k}`); lab.textContent=v?`${v} / 5`:"not rated"; lab.style.color=v?col(v,r.neutral):"";
   });
 }
@@ -771,6 +775,13 @@ function backupJSON(){
 }
 function stripId(e){ const {id,...d}=e; return d; }
 // Keep the newer copy of each fill, and merge daily logs day by day (newer wins per day).
+// Older data used appetite 1 = no appetite ... 5 = always hungry. Scale v2 flips it
+// so 5 = the good end (less hunger), like every other rating.
+function upgradeScale(d){
+  if((d.scaleVersion||1)>=2) return d;
+  const flip=r=>(r&&typeof r.appetite==="number")?{...r,appetite:6-r.appetite}:r;
+  return {...d,scaleVersion:2,ratings:flip(d.ratings),checkins:(d.checkins||[]).map(c=>({...c,ratings:flip(c.ratings)}))};
+}
 function mergeFill(cur,inc){
   if(!cur) return inc;
   const newer=(inc.updatedAt||"")>(cur.updatedAt||"")?inc:cur;
@@ -791,7 +802,7 @@ $("importFile").addEventListener("change",async()=>{
   for(const f of fills){
     if(!f||typeof f!=="object"||!ID_OK.test(String(f.id||""))||!f.mfr||!f.date){ skipped++; continue; }
     const cur=entries.find(e=>e.id===f.id);
-    const merged=mergeFill(cur?stripId(cur):null,stripId(f));
+    const merged=mergeFill(cur?stripId(cur):null,upgradeScale(stripId(f)));
     if(cur && JSON.stringify(stripId(cur))===JSON.stringify(merged)){ same++; continue; }
     try{ await db.doc("fills/"+f.id).set(merged); cur?updated++:added++; }
     catch(e){ setIo("Stopped partway: couldn't save a fill. Try importing again; nothing already saved will double up.",true); return; }
@@ -824,8 +835,12 @@ function supaDB(userId){
     const {data,error}=await sb.from("fills").select("id,doc");
     if(error){ setStatus(false,"Couldn't load your logs. Check your connection."); return; }
     docs=new Map(data.map(r=>[r.id,r.doc])); emit(); setStatus(true,"Synced to your account");
+    // One-time upgrade of older fills to the current rating scale (appetite flipped).
+    const old=[...docs].filter(([,d])=>(d.scaleVersion||1)<2);
+    for(const [id,d] of old){ try{ await put(id,upgradeScale(d)); }catch(e){ break; } }
   }
   async function put(id,d){
+    d={...d,scaleVersion:2};
     const {error}=await sb.from("fills").upsert({id,user_id:userId,doc:d,updated_at:new Date().toISOString()},{onConflict:"user_id,id"});
     if(error) throw {code:"unavailable",message:error.message};
     docs.set(id,d); emit();
