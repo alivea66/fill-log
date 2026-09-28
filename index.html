@@ -35,6 +35,8 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.demo-cta{display:flex;flex-direction:column;align-items:flex-start;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.demo-banner{background:var(--accent-soft);color:var(--ink);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:14px}
 :root{--g-glass:color-mix(in srgb,var(--chip) 65%,transparent);--g-shine:rgba(255,255,255,.55);--g-rim:rgba(0,0,0,.06)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g-shine:rgba(255,255,255,.3);--g-rim:rgba(255,255,255,.14)}}
 :root[data-theme="dark"]{--g-shine:rgba(255,255,255,.3);--g-rim:rgba(255,255,255,.14)}
@@ -282,9 +284,15 @@ textarea{min-height:70px;resize:vertical}
       </div>
       <span class="msg" id="authMsg" role="status"></span>
     </form>
+    <div class="demo-cta">
+      <span class="msg">Just looking?</span>
+      <button type="button" class="btn" id="demoBtn">Try the demo</button>
+      <span class="msg">No account needed. Uses sample data, and nothing is saved.</span>
+    </div>
   </section>
 
   <div id="app" hidden style="display:flex;flex-direction:column;gap:28px">
+  <div class="demo-banner" id="demoBanner" hidden role="note"><strong>Demo mode.</strong> This is sample data. Try anything, since nothing is saved and it resets when you leave.</div>
 
   <!-- Daily check-in -->
   <section class="checkin" aria-labelledby="ciTitle">
@@ -966,12 +974,66 @@ function supaDB(userId){
   };
 }
 
+// ---- Demo mode: same interface as the real store, but everything lives in memory ----
+function memDB(seed){
+  const docs=new Map(seed.map(({id,...d})=>[id,JSON.parse(JSON.stringify(d))]));
+  const subs=new Set();
+  const snap=()=>({docs:[...docs].map(([id,d])=>({id,data:()=>d}))});
+  const emit=()=>subs.forEach(f=>f(snap()));
+  return {
+    collection(){ return {
+      add:async d=>{ const id="demo"+Math.random().toString(36).slice(2,9); docs.set(id,d); emit(); return {id}; },
+      onSnapshot(fn){ subs.add(fn); fn(snap()); return ()=>subs.delete(fn); }
+    }; },
+    doc(p){ const id=p.split("/")[1]; return {
+      set:async d=>{ docs.set(id,d); emit(); },
+      update:async d=>{ docs.set(id,{...(docs.get(id)||{}),...d}); emit(); },
+      delete:async()=>{ docs.delete(id); emit(); }
+    }; }
+  };
+}
+// Sample fills dated relative to today, so the demo always looks current.
+function demoData(){
+  const day=n=>{ const d=new Date(); d.setDate(d.getDate()-n); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+  const clamp=v=>Math.min(5,Math.max(1,Math.round(v*2)/2));
+  const wobble=[0,.5,-.5,0,.5,-.5,0,-.5,.5];
+  const logs=(start,count,base,fx,notes)=>Array.from({length:count},(_,i)=>{
+    const w=k=>clamp(base[k]+wobble[(i+k.length)%wobble.length]);
+    const r={}; Object.keys(base).forEach(k=>r[k]=w(k));
+    return {id:"c"+start+"-"+i,date:day(start-i*4-1),ratings:r,effects:fx[i%fx.length],note:notes[i%notes.length]||""};
+  });
+  const A="Amphetamine salts (Adderall)", L="Lisdexamfetamine (Vyvanse)";
+  return [
+    {id:"demo-teva",date:day(95),med:A,form:"IR (instant release)",dose:"20 mg",mfr:"Teva",ndc:"dp 20",pharmacy:"Sample Pharmacy",again:"yes",notes:"Sample fill: steady and predictable.",scaleVersion:2,
+      ratings:{focus:4.5,productivity:4,duration:4,comedown:4,tiredness:4,depression:4,irritability:4,anxiety:4,appetite:3.5,overall:4.5},effects:["None"],
+      checkins:logs(94,6,{focus:4.5,productivity:4,duration:4,comedown:4,tiredness:4,depression:4,irritability:4.5,anxiety:4,appetite:3.5,overall:4.5},[[],["Dry mouth"],[]],["Locked in all morning.","","Wore off around 3."])},
+    {id:"demo-aurobindo",date:day(65),med:A,form:"IR (instant release)",dose:"20 mg",mfr:"Aurobindo",ndc:"",pharmacy:"Sample Pharmacy",again:"no",notes:"Sample fill: rough month.",scaleVersion:2,
+      ratings:{focus:2,productivity:2.5,duration:2,comedown:1.5,tiredness:2,depression:2.5,irritability:2,anxiety:2,appetite:3,overall:2},effects:["Headache","Crash"],
+      checkins:logs(64,5,{focus:2,productivity:2.5,duration:2,comedown:1.5,tiredness:2,depression:2.5,irritability:2,anxiety:2,appetite:3,overall:2},[["Headache","Crash"],["Jittery"],["Crash"]],["Hit hard then dropped off fast.","Headache by noon."])},
+    {id:"demo-elite",date:day(35),med:A,form:"IR (instant release)",dose:"20 mg",mfr:"Elite",ndc:"",pharmacy:"Sample Pharmacy",again:"maybe",notes:"Sample fill: focus was fine but always hungry.",scaleVersion:2,
+      ratings:{focus:3.5,productivity:3,duration:3,comedown:3,tiredness:3,depression:3.5,irritability:3.5,anxiety:3,appetite:1.5,overall:3},effects:["Brain fog"],
+      checkins:logs(34,7,{focus:3.5,productivity:3.5,duration:3,comedown:3,tiredness:2.5,depression:3.5,irritability:3.5,anxiety:3,appetite:1.5,overall:3},[["Brain fog"],[],["Trouble sleeping"]],["Productive but scattered.","","Tired by the afternoon."])},
+    {id:"demo-amneal",date:day(6),med:L,form:"XR (extended release)",dose:"50 mg",mfr:"Amneal",ndc:"AN 26",pharmacy:"Sample Pharmacy",again:"yes",notes:"Sample fill: smooth all day.",scaleVersion:2,
+      ratings:{focus:4,productivity:4.5,duration:4.5,comedown:4.5,tiredness:4,depression:4,irritability:4,anxiety:3.5,appetite:3,overall:4},effects:[],
+      checkins:logs(5,2,{focus:4,productivity:4.5,duration:4.5,comedown:4.5,tiredness:4,depression:4,irritability:4,anxiety:3.5,appetite:3,overall:4},[[],["Dry mouth"]],["Lasted into the evening."])}
+  ];
+}
+let demoMode=false;
+function startDemo(){
+  demoMode=true;
+  if(location.hash!=="#demo") history.replaceState(null,"","#demo");
+  startApp(null);
+}
+$("demoBtn").addEventListener("click",startDemo);
+
 let started=false;
 function startApp(user){
   if(started) return; started=true;
   $("authCard").hidden=true; $("app").hidden=false; $("signOutBtn").hidden=false;
-  setStatus(false,"Loading your logs…");
-  db=supaDB(user.id);
+  $("demoBanner").hidden=!demoMode; $("signOutBtn").textContent=demoMode?"Exit demo":"Sign out";
+  setStatus(false,demoMode?"Demo mode":"Loading your logs…");
+  db=demoMode?memDB(demoData()):supaDB(user.id);
+  if(demoMode) setStatus(true,"Demo mode: nothing is saved");
   let first=true;
   db.collection("fills").onSnapshot(snap=>{
     entries=snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1021,10 +1083,17 @@ $("signUpBtn").addEventListener("click",async()=>{
   if(data.session) setAuth("Account created.");
   else setAuth("Check your email and click the confirmation link. If the page it opens doesn't load, that's fine. Come back here and click Sign in.");
 });
-$("signOutBtn").addEventListener("click",async()=>{ await sb.auth.signOut(); });
+$("signOutBtn").addEventListener("click",async()=>{
+  if(demoMode){ demoMode=false; history.replaceState(null,"",location.pathname); $("demoBanner").hidden=true; showSignIn();
+    sb.auth.getSession().then(({data})=>{ if(data.session?.user) startApp(data.session.user); }); return; }
+  await sb.auth.signOut();
+});
 
-sb.auth.onAuthStateChange((event,session)=>{ if(session?.user) startApp(session.user); else if(event==="SIGNED_OUT") showSignIn(); });
-sb.auth.getSession().then(({data})=>{ if(data.session?.user) startApp(data.session.user); else showSignIn(); });
+sb.auth.onAuthStateChange((event,session)=>{ if(demoMode) return; if(session?.user) startApp(session.user); else if(event==="SIGNED_OUT") showSignIn(); });
+// A link ending in #demo opens straight into the demo, e.g. alivea66.github.io/fill-log/#demo
+window.addEventListener("hashchange",()=>{ if(location.hash==="#demo" && !demoMode){ started=false; startDemo(); } });
+if(location.hash==="#demo") startDemo();
+else sb.auth.getSession().then(({data})=>{ if(data.session?.user) startApp(data.session.user); else showSignIn(); });
 </script>
 
 </body>
