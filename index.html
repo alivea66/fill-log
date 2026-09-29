@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fill Log</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -47,6 +48,58 @@
 .toast.err{background:var(--bad)}
 .btn.saved{background:var(--good)!important;border-color:var(--good)!important;color:var(--on-accent)!important}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* ---- Tabs ---- */
+.tabs{display:inline-flex;gap:4px;padding:4px;border-radius:12px;align-self:flex-start;
+  background:linear-gradient(to bottom,var(--g-shine),rgba(255,255,255,0) 60%),var(--g-glass);box-shadow:inset 0 0 0 1px var(--g-rim)}
+.tabs button{border:0;background:transparent;color:var(--muted);font-weight:600;font-size:15px;padding:8px 20px;border-radius:9px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.22)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{display:flex;flex-direction:column;gap:28px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.card p{margin:0}
+/* ---- Pharmacy map ---- */
+.mapbox{height:min(56vh,440px);border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--chip)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .mapbox .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9)}}
+:root[data-theme="dark"] .mapbox .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9)}
+.map-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pm{stroke:#fff;stroke-width:2.5;fill-opacity:.95}
+.pm-none{fill:var(--muted)} .pm-fav{fill:var(--accent)}
+.pm-s1{fill:var(--s1)} .pm-s2{fill:var(--s2)} .pm-s3{fill:var(--s3)} .pm-s4{fill:var(--s4)} .pm-s5{fill:var(--s5)}
+.pm.sel{stroke:var(--ink);stroke-width:4}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);align-items:center}
+.map-legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.ph-list{display:flex;flex-direction:column;gap:8px}
+.ph{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+.ph.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.ph-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ph-name{font-weight:600;font-size:15px;background:none;border:0;padding:0;color:var(--ink);text-align:left;cursor:pointer}
+.ph-meta{font-size:13px;color:var(--muted)}
+.ph-hist{display:flex;flex-wrap:wrap;gap:4px}
+.ph-hist span{--c:var(--line);font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:var(--ink);
+  background:linear-gradient(to bottom,var(--g-shine),rgba(255,255,255,0) 60%),color-mix(in srgb,var(--c) 30%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 60%,transparent)}
+.ph-acts{display:flex;flex-wrap:wrap;gap:6px}
+.ph-acts a.btn{text-decoration:none;display:inline-block}
+.star{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:2px}
+.star[aria-pressed="true"]{color:var(--s3)}
+/* ---- State tile map ---- */
+.st-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stgrid{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
+.tile{aspect-ratio:1;border:0;border-radius:6px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+  font-family:var(--mono);color:var(--ink);background:var(--chip);box-shadow:inset 0 0 0 1px var(--g-rim);min-width:0}
+.tile b{font-size:11px;font-weight:600;line-height:1}
+.tile small{font-size:9px;line-height:1.1;opacity:.9}
+.tile.nodata{opacity:.45}
+.tile.sel{outline:2px solid var(--ink);outline-offset:1px}
+.tile{background-image:linear-gradient(to bottom,var(--g-shine),rgba(255,255,255,0) 55%)}
+@media (max-width:420px){.tile small{display:none}.tile b{font-size:10px}}
+.st-legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.st-legend .ramp{flex:1;max-width:220px;height:10px;border-radius:5px;background:linear-gradient(to right,var(--chip),var(--accent));box-shadow:inset 0 0 0 1px var(--g-rim)}
+.st-detail{display:flex;flex-direction:column;gap:10px}
+.st-bars{display:grid;grid-template-columns:minmax(0,auto) minmax(60px,1fr) auto;gap:6px 10px;align-items:center;font-size:13px}
+.st-bars .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw}
+.st-bars .bar{--c:var(--accent)}
+.st-bars .v{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+
 /* Rating gauge */
 .rate-head label{font-weight:600}
 .rate-head .rv{display:flex;align-items:center;gap:8px}
@@ -293,6 +346,11 @@ textarea{min-height:70px;resize:vertical}
 
   <div id="app" hidden style="display:flex;flex-direction:column;gap:28px">
   <div class="demo-banner" id="demoBanner" hidden role="note"><strong>Demo mode.</strong> This is sample data. Try anything, since nothing is saved and it resets when you leave.</div>
+  <nav class="tabs" role="tablist" aria-label="Pages">
+    <button type="button" role="tab" id="tabLog" aria-selected="true" aria-controls="pageLog">Log</button>
+    <button type="button" role="tab" id="tabMap" aria-selected="false" aria-controls="pageMap">Map</button>
+  </nav>
+  <div id="pageLog" class="page" role="tabpanel" aria-labelledby="tabLog">
 
   <!-- Daily check-in -->
   <section class="checkin" aria-labelledby="ciTitle">
@@ -380,7 +438,7 @@ textarea{min-height:70px;resize:vertical}
           </select></div>
         <div class="field" id="otherWrap" hidden><label class="label" for="f-mfr-other">Other manufacturer</label><input id="f-mfr-other"></div>
         <div class="field"><label class="label" for="f-ndc">NDC or pill imprint (optional)</label><input id="f-ndc" class="mono" placeholder="e.g. 65162-026 or AN 26"></div>
-        <div class="field"><label class="label" for="f-pharm">Pharmacy</label><input id="f-pharm" placeholder="Name and location"></div>
+        <div class="field"><label class="label" for="f-pharm">Pharmacy</label><input id="f-pharm" placeholder="Name and location"><button type="button" class="btn small" id="pickPharmBtn" style="align-self:flex-start">Pick on map</button></div>
       </div>
 
       <div>
@@ -424,6 +482,39 @@ textarea{min-height:70px;resize:vertical}
     <p class="msg" id="ioMsg" role="status" style="margin:0"></p>
     <div class="entries" id="entries"></div>
   </section>
+  </div>
+  <div id="pageMap" class="page" role="tabpanel" aria-labelledby="tabMap" hidden>
+    <section class="card" aria-labelledby="mapTitle">
+      <div class="log-head"><h2 id="mapTitle">Pharmacies near you</h2><span class="msg" id="mapMsg"></span></div>
+      <div class="demo-banner" id="pickBanner" hidden>Choose the pharmacy for this fill: tap one on the map or in the list, then <strong>Use for this fill</strong>. <button type="button" class="btn small ghost" id="pickCancel">Cancel</button></div>
+      <div class="map-tools">
+        <button type="button" class="btn" id="locateBtn">Near me</button>
+        <button type="button" class="btn" id="searchAreaBtn">Search this area</button>
+      </div>
+      <div id="map" class="mapbox" aria-label="Map of pharmacies"></div>
+      <div class="map-legend">
+        <span><i style="background:var(--s5)"></i>Your fills there (colored by how they worked)</span>
+        <span><i style="background:var(--accent)"></i>Saved</span>
+        <span><i style="background:var(--muted)"></i>Other pharmacies</span>
+      </div>
+      <p class="msg">Pharmacy locations come from OpenStreetMap. Live stock isn't public, so this shows what you've gotten at each place.</p>
+      <div class="ph-list" id="phList"></div>
+    </section>
+
+    <section class="card" aria-labelledby="stTitle">
+      <h2 id="stTitle">Who supplies each state</h2>
+      <p class="msg">Share of Medicaid prescriptions filled with each manufacturer, from the government's State Drug Utilization Data. It's state-level and Medicaid-only, so it's a clue about what pharmacies stock, not a guarantee.</p>
+      <div class="st-controls">
+        <div class="field"><label class="label" for="st-drug">Medication</label>
+          <select id="st-drug"><option value="amph">Amphetamine salts (Adderall)</option><option value="lisdex">Lisdexamfetamine (Vyvanse)</option><option value="mph">Methylphenidate (Ritalin, Concerta, Metadate CD)</option></select></div>
+        <div class="field"><label class="label" for="st-mfr">Shade states by</label><select id="st-mfr" disabled><option>Loading…</option></select></div>
+      </div>
+      <span class="msg" id="stStatus" role="status"></span>
+      <div class="stgrid" id="stGrid" aria-label="U.S. states shaded by manufacturer share"></div>
+      <div class="st-legend"><span>0%</span><span class="ramp"></span><span>100%</span><span id="stLegendName"></span></div>
+      <div class="st-detail" id="stDetail"></div>
+    </section>
+  </div>
 </div>
 </div>
 
@@ -431,6 +522,7 @@ textarea{min-height:70px;resize:vertical}
   <radialGradient id="fl-bead" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></radialGradient>
 </defs></svg>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="supabase.js"></script>
 <script>
 const RATINGS=[
@@ -468,6 +560,7 @@ const EXAMPLES=[
   {id:"ex2",example:true,date:"2026-09-03",med:MEDS[0],form:"IR (instant release)",dose:"20 mg",mfr:"Aurobindo",ndc:"",pharmacy:"Example pharmacy",ratings:{focus:2,duration:2,comedown:2,depression:3,irritability:2,anxiety:2,appetite:3,overall:2},effects:["Headache","Crash"],again:"no",notes:"Example entry showing a month that didn't go well.",checkins:[]}
 ];
 
+let pickedPharm=null, currentUser=null, favs=[];
 let db=null, downloads=null, entries=[], usingExamples=true, editingId=null, filter="", pendingDelete=null, pendingDay=null;
 const fstate={ratings:{},effects:new Set()};   // new-fill form
 const cstate={ratings:{},effects:new Set()};   // check-in form
@@ -805,7 +898,7 @@ function renderOverview(){
   $("ovList").innerHTML=logs.slice().reverse().map(l=>dayRow(l._e,l)).join("");
 }
 $("ov-scope").addEventListener("change",()=>{ ovScope=$("ov-scope").value; renderOverview(); });
-function renderAll(){ renderBoard(); renderFilter(); renderEntries(); renderCheckinSelect(); renderOverview(); }
+function renderAll(){ renderBoard(); renderFilter(); renderEntries(); renderCheckinSelect(); renderOverview(); if(typeof MAP!=="undefined"&&MAP.map) renderPlaces(); }
 
 // New fill / edit fill
 function setMsg(t,err){ $("formMsg").textContent=t; $("formMsg").className="msg"+(err?" err":""); }
@@ -824,7 +917,7 @@ function startEdit(id){
   $("f-date").value=e.date||"";
   const m=matchMed(e.med); $("f-med").value=m||"Other"; $("medOtherWrap").hidden=!!m; $("f-med-other").value=m?"":(e.med||"");
   const formKnown=[...$("f-form").options].some(o=>o.value===e.form); $("f-form").value=formKnown?e.form:"IR (instant release)";
-  $("f-dose").value=e.dose||""; $("f-ndc").value=e.ndc||""; $("f-pharm").value=e.pharmacy||""; $("f-notes").value=e.notes||""; $("f-again").value=e.again||"";
+  $("f-dose").value=e.dose||""; $("f-ndc").value=e.ndc||""; $("f-pharm").value=e.pharmacy||""; pickedPharm=e.pharmacyPlace?{...e.pharmacyPlace,label:e.pharmacy}:null; $("f-notes").value=e.notes||""; $("f-again").value=e.again||"";
   const known=[...$("f-mfr").options].some(o=>o.value===e.mfr);
   $("f-mfr").value=known?e.mfr:"Other"; $("otherWrap").hidden=known; $("f-mfr-other").value=known?"":e.mfr;
   fstate.ratings={...(e.ratings||{})}; fstate.effects=new Set(e.effects||[]);
@@ -846,7 +939,7 @@ $("entryForm").addEventListener("submit",async ev=>{
   if(!db){ setMsg("Saving isn't available in this view.",true); return; }
   const now=new Date().toISOString();
   const doc={date:$("f-date").value,med,form:$("f-form").value,dose:$("f-dose").value.trim(),mfr,
-    ndc:$("f-ndc").value.trim(),pharmacy:$("f-pharm").value.trim(),ratings:{...fstate.ratings},effects:[...fstate.effects],
+    ndc:$("f-ndc").value.trim(),pharmacy:$("f-pharm").value.trim(),pharmacyPlace:pickedPharm&&pickedPharm.label===$("f-pharm").value.trim()?pickedPharm:null,ratings:{...fstate.ratings},effects:[...fstate.effects],
     again:$("f-again").value,notes:$("f-notes").value.trim(),updatedAt:now};
   $("saveBtn").disabled=true;
   try{
@@ -1026,6 +1119,238 @@ function startDemo(){
 }
 $("demoBtn").addEventListener("click",startDemo);
 
+
+// =================== MAP PAGE ===================
+function showTab(t){
+  $("pageLog").hidden=t!=="log"; $("pageMap").hidden=t!=="map";
+  $("tabLog").setAttribute("aria-selected",t==="log"); $("tabMap").setAttribute("aria-selected",t==="map");
+  if(t==="map"){ initMap(); initStates(); }
+}
+$("tabLog").addEventListener("click",()=>{ MAP.pick=false; $("pickBanner").hidden=true; showTab("log"); });
+$("tabMap").addEventListener("click",()=>showTab("map"));
+
+var MAP={map:null,layer:null,places:new Map(),sel:null,pick:false,loading:false,markers:new Map()};
+const DENVER=[39.7392,-104.9903];
+function setMapMsg(t,err){ $("mapMsg").textContent=t; $("mapMsg").className="msg"+(err?" err":""); }
+function normTxt(t){ return String(t||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim(); }
+// "king soopers #12 on colfax" -> "king soopers" (used to match typed pharmacy names to real places)
+function brandKey(t){
+  const stop=new Set(["on","at","in","near","pharmacy","store","the","rx"]); const out=[];
+  for(const w of normTxt(t).split(" ")){ if(!w) continue; if(/\d/.test(w)||stop.has(w)) { if(out.length) break; else continue; } out.push(w); if(out.length===2) break; }
+  const k=out.join(" "); return k.length>=4?k:"";
+}
+function historyFor(pl){
+  const nm=normTxt(pl.name+" "+(pl.brand||"")); const by={};
+  let exact=false;
+  entries.forEach(e=>{
+    const hit=e.pharmacyPlace?.id===pl.id ? "exact" : (()=>{ const k=brandKey(e.pharmacy); return k&&nm.includes(k)?"brand":""; })();
+    if(!hit) return; if(hit==="exact") exact=true;
+    const o=fillAvg(e).r.overall; (by[e.mfr]??=[]).push(o);
+  });
+  const items=Object.entries(by).map(([mfr,v])=>({mfr,avg:avg(v),n:v.length})).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  const all=items.flatMap(i=>by[i.mfr]); return {items,avg:avg(all),n:all.length,exact};
+}
+function milesBetween(a,b){ const R=3958.8,t=x=>x*Math.PI/180; const dLa=t(b[0]-a[0]),dLo=t(b[1]-a[1]);
+  const h=Math.sin(dLa/2)**2+Math.cos(t(a[0]))*Math.cos(t(b[0]))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function isFav(id){ return favs.some(f=>f.id===id); }
+
+function initMap(){
+  if(!window.L){ setMapMsg("The map couldn't load. Check your connection and reopen this tab.",true); return; }
+  if(MAP.map){ setTimeout(()=>MAP.map.invalidateSize(),50); renderPlaces(); return; }
+  favs.forEach(f=>MAP.places.set(f.id,f));
+  MAP.map=L.map("map",{zoomControl:true}).setView(favs[0]?[favs[0].lat,favs[0].lon]:DENVER,13);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(MAP.map);
+  MAP.layer=L.layerGroup().addTo(MAP.map);
+  setTimeout(()=>MAP.map.invalidateSize(),50);
+  locate(true);
+}
+function locate(quiet){
+  if(!navigator.geolocation){ loadPlaces(); return; }
+  setMapMsg("Finding you…");
+  navigator.geolocation.getCurrentPosition(p=>{
+    MAP.me=[p.coords.latitude,p.coords.longitude];
+    MAP.map.setView(MAP.me,14); loadPlaces();
+  },()=>{ setMapMsg(quiet?"Showing Denver. Tap Near me to use your location.":"Location is off. Allow it in your browser settings, or move the map and tap Search this area.",!quiet); loadPlaces(); },{enableHighAccuracy:false,timeout:8000,maximumAge:300000});
+}
+$("locateBtn").addEventListener("click",()=>locate(false));
+$("searchAreaBtn").addEventListener("click",()=>loadPlaces());
+
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+async function loadPlaces(){
+  if(!MAP.map||MAP.loading) return;
+  if(MAP.map.getZoom()<11){ setMapMsg("Zoom in a little to search for pharmacies."); renderPlaces(); return; }
+  const b=MAP.map.getBounds(), bb=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(x=>x.toFixed(5)).join(",");
+  const q=`[out:json][timeout:25];(nwr["amenity"="pharmacy"](${bb});nwr["healthcare"="pharmacy"](${bb}););out center tags 200;`;
+  MAP.loading=true; setMapMsg("Looking for pharmacies…");
+  let data=null;
+  for(const url of OVERPASS){
+    try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(q)});
+      if(r.ok){ data=await r.json(); break; } }catch(e){}
+  }
+  MAP.loading=false;
+  if(!data){ setMapMsg("Couldn't reach the pharmacy map service. Try again in a minute.",true); renderPlaces(); return; }
+  (data.elements||[]).forEach(el=>{
+    const lat=el.lat??el.center?.lat, lon=el.lon??el.center?.lon, t=el.tags||{}; if(lat==null||lon==null) return;
+    const id=el.type[0]+el.id;
+    const addr=[[t["addr:housenumber"],t["addr:street"]].filter(Boolean).join(" "),t["addr:city"]].filter(Boolean).join(", ");
+    MAP.places.set(id,{id,lat,lon,name:t.name||t.brand||"Pharmacy",brand:t.brand||"",addr,phone:t.phone||t["contact:phone"]||"",hours:t.opening_hours||""});
+  });
+  const n=(data.elements||[]).length;
+  setMapMsg(n?`${n} pharmac${n===1?"y":"ies"} in this area`:"No pharmacies mapped here. Try zooming out a bit.");
+  renderPlaces();
+}
+function markerClass(pl,h){ if(h.n&&h.avg!=null) return "pm pm-s"+Math.min(5,Math.max(1,Math.round(h.avg))); if(isFav(pl.id)) return "pm pm-fav"; return "pm pm-none"; }
+function renderPlaces(){
+  if(!MAP.map) return;
+  MAP.layer.clearLayers(); MAP.markers.clear();
+  const c=MAP.map.getCenter(), center=MAP.me||[c.lat,c.lng], bounds=MAP.map.getBounds();
+  const rows=[...MAP.places.values()].map(pl=>({pl,h:historyFor(pl),fav:isFav(pl.id),mi:milesBetween(center,[pl.lat,pl.lon])}));
+  rows.forEach(({pl,h})=>{
+    const m=L.circleMarker([pl.lat,pl.lon],{radius:h.n?10:8,className:markerClass(pl,h)+(MAP.sel===pl.id?" sel":"")}).addTo(MAP.layer);
+    m.on("click",()=>selectPlace(pl.id,true)); m.bindTooltip(pl.name,{direction:"top",offset:[0,-8]}); MAP.markers.set(pl.id,m);
+  });
+  const vis=rows.filter(r=>r.fav||r.h.n||bounds.contains([r.pl.lat,r.pl.lon]))
+    .sort((a,b)=>(b.pl.id===MAP.sel)-(a.pl.id===MAP.sel)||(b.h.n>0)-(a.h.n>0)||(b.fav-a.fav)||a.mi-b.mi).slice(0,30);
+  $("phList").innerHTML=vis.length?vis.map(({pl,h,fav,mi})=>`
+    <article class="ph${MAP.sel===pl.id?" sel":""}" id="ph-${esc(pl.id)}">
+      <div class="ph-top">
+        <div><button type="button" class="ph-name" data-sel="${esc(pl.id)}">${esc(pl.name)}</button>
+          <div class="ph-meta">${esc(pl.addr||"Address not listed")} · ${mi<10?mi.toFixed(1):Math.round(mi)} mi</div>
+          ${pl.hours?`<div class="ph-meta">Hours: ${esc(pl.hours)}</div>`:""}</div>
+        <button type="button" class="star" data-fav="${esc(pl.id)}" aria-pressed="${fav}" aria-label="${fav?"Remove from saved":"Save pharmacy"}">${fav?"★":"☆"}</button>
+      </div>
+      ${h.n?`<div class="ph-meta">${h.exact?"Your fills at this location:":"Your fills at "+esc(pl.brand||pl.name.split(" ").slice(0,2).join(" "))+" (any location):"}</div>
+        <div class="ph-hist">${h.items.map(i=>`<span style="--c:${col(i.avg)}">${esc(i.mfr)} ${fmt1(i.avg)}</span>`).join("")}</div>`:""}
+      <div class="ph-acts">
+        ${MAP.pick?`<button type="button" class="btn small primary" data-use="${esc(pl.id)}">Use for this fill</button>`:""}
+        <a class="btn small" href="https://maps.apple.com/?daddr=${pl.lat},${pl.lon}&q=${encodeURIComponent(pl.name)}" target="_blank" rel="noopener">Directions</a>
+        ${pl.phone?`<a class="btn small" href="tel:${esc(pl.phone.replace(/[^0-9+]/g,""))}">Call</a>`:""}
+      </div>
+    </article>`).join(""):`<p class="empty-note">No pharmacies in view yet. Tap Near me or Search this area.</p>`;
+}
+function selectPlace(id,fromMap){
+  MAP.sel=id; const pl=MAP.places.get(id); renderPlaces();
+  if(!fromMap&&pl) MAP.map.setView([pl.lat,pl.lon],Math.max(MAP.map.getZoom(),15));
+  const card=document.getElementById("ph-"+id); card?.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("phList").addEventListener("click",async e=>{
+  const s=e.target.closest("[data-sel]"); if(s){ selectPlace(s.dataset.sel,false); return; }
+  const f=e.target.closest("[data-fav]");
+  if(f){ const id=f.dataset.fav, pl=MAP.places.get(id); if(!pl) return;
+    if(isFav(id)){ favs=favs.filter(x=>x.id!==id); toast("Removed from saved"); }
+    else { favs=[...favs,{id,lat:pl.lat,lon:pl.lon,name:pl.name,brand:pl.brand,addr:pl.addr,phone:pl.phone,hours:pl.hours}]; toast(`${pl.name} saved`); }
+    renderPlaces();
+    if(!demoMode){ try{ const {error}=await sb.auth.updateUser({data:{favPharmacies:favs}}); if(error) throw error; }catch(err){ toast("Couldn't save that. Check your connection.",true); } }
+    return; }
+  const u=e.target.closest("[data-use]");
+  if(u){ const pl=MAP.places.get(u.dataset.use); if(!pl) return;
+    const label=pl.name+(pl.addr?", "+pl.addr.split(",")[0]:"");
+    pickedPharm={id:pl.id,name:pl.name,brand:pl.brand,addr:pl.addr,lat:pl.lat,lon:pl.lon,label};
+    $("f-pharm").value=label; MAP.pick=false; $("pickBanner").hidden=true;
+    showTab("log"); $("fillPanel").open=true; $("f-pharm").scrollIntoView({behavior:"smooth",block:"center"}); toast("Pharmacy added to this fill");
+  }
+});
+$("pickPharmBtn").addEventListener("click",()=>{ MAP.pick=true; $("pickBanner").hidden=false; showTab("map"); window.scrollTo({top:0,behavior:"smooth"}); });
+$("pickCancel").addEventListener("click",()=>{ MAP.pick=false; $("pickBanner").hidden=true; showTab("log"); $("fillPanel").open=true; });
+$("f-pharm").addEventListener("input",()=>{ if(pickedPharm&&$("f-pharm").value.trim()!==pickedPharm.label) pickedPharm=null; });
+
+// =================== STATE LAYER (Medicaid SDUD) ===================
+const SDUD=[{year:2025,id:"158a1baa-5506-400a-8ec3-97756f0b0536"},{year:2024,id:"61729e5a-7aa8-448c-8903-ba3e0cd0ea3c"}];
+// Medicaid shortens product names to 10 characters, so these are prefixes.
+const SD_DRUGS={
+  amph:{names:["DEXTROAMP","AMPHETAMI","ADDERALL"],note:"Medicaid's shortened product names can't separate Adderall-type mixed salts from plain dextroamphetamine, so both are counted here."},
+  lisdex:{names:["LISDEXAMF","VYVANSE"],note:""},
+  mph:{names:["METHYLPHE","CONCERTA","RITALIN","METADATE"],note:"Includes every methylphenidate form (IR, ER, CD, Concerta-type)."}
+};
+// FDA labeler codes (first 5 digits of the NDC) to company names.
+const LABELERS={"00555":"Teva","00093":"Teva","00591":"Teva (Actavis)","00228":"Teva (Actavis)","00172":"Teva","00185":"Sandoz","00781":"Sandoz",
+  "65862":"Aurobindo","59651":"Aurobindo","00406":"SpecGx (Mallinckrodt)","00115":"Amneal","65162":"Amneal","69238":"Amneal","00527":"Lannett",
+  "42806":"Epic Pharma","64850":"Elite","47781":"Alvogen","31722":"Camber","68180":"Lupin","10702":"KVK-Tech","62756":"Sun Pharma","47335":"Sun Pharma",
+  "57664":"Sun Pharma","59417":"Takeda (brand)","54092":"Takeda/Shire (brand)","00378":"Mylan (Viatris)","43598":"Dr. Reddy's","16714":"NorthStar",
+  "42291":"AvKARE","70010":"Granules","50458":"Janssen (brand)","00078":"Novartis (brand)","00904":"Major (repackager)","60687":"American Health Packaging (repackager)",
+  "68084":"American Health Packaging (repackager)","63629":"Bryant Ranch (repackager)","71335":"Bryant Ranch (repackager)","50090":"A-S Medication (repackager)"};
+const labName=c=>LABELERS[c]||`Labeler ${c}`;
+const GRID=[["AK",0,0],["ME",0,10],["VT",1,9],["NH",1,10],
+  ["WA",2,0],["ID",2,1],["MT",2,2],["ND",2,3],["MN",2,4],["IL",2,5],["WI",2,6],["MI",2,7],["NY",2,8],["RI",2,9],["MA",2,10],
+  ["OR",3,0],["NV",3,1],["WY",3,2],["SD",3,3],["IA",3,4],["IN",3,5],["OH",3,6],["PA",3,7],["NJ",3,8],["CT",3,9],
+  ["CA",4,0],["UT",4,1],["CO",4,2],["NE",4,3],["MO",4,4],["KY",4,5],["WV",4,6],["VA",4,7],["MD",4,8],["DE",4,9],
+  ["AZ",5,1],["NM",5,2],["KS",5,3],["AR",5,4],["TN",5,5],["NC",5,6],["SC",5,7],["DC",5,8],
+  ["OK",6,3],["LA",6,4],["MS",6,5],["AL",6,6],["GA",6,7],["HI",7,0],["TX",7,3],["FL",7,8]];
+const ST={drug:"amph",data:null,mfr:"",state:"CO",loadedFor:null};
+function sdUrl(ds,params){ const u=new URLSearchParams(); Object.entries(params).forEach(([k,v])=>u.append(k,v)); return `https://data.medicaid.gov/api/1/datastore/query/${ds}/0?${u}`; }
+async function sdGet(ds,params){ const r=await fetch(sdUrl(ds,params)); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+function cond(i,prop,val,op){ return {[`conditions[${i}][property]`]:prop,[`conditions[${i}][value]`]:val,[`conditions[${i}][operator]`]:op}; }
+async function loadSdud(drugKey){
+  const cacheKey="sdud:"+drugKey;
+  try{ const c=JSON.parse(localStorage.getItem(cacheKey)||"null"); if(c&&Date.now()-c.ts<7*864e5) return c; }catch(e){}
+  const names=SD_DRUGS[drugKey].names;
+  let ds=null,year=null,quarter=null;
+  for(const d of SDUD){   // newest year that has data for this drug, and its latest quarter
+    const j=await sdGet(d.id,{...cond(0,"product_name",names[0]+"%","like"),"sorts[0][property]":"quarter","sorts[0][order]":"desc","limit":1,"properties[0]":"quarter"});
+    if(j.results&&j.results.length){ ds=d.id; year=d.year; quarter=+j.results[0].quarter; break; }
+  }
+  if(!ds) throw new Error("no data");
+  const agg={}, ndcEx={};
+  for(const nm of names){
+    for(let off=0,page=0;page<12;page++){
+      const j=await sdGet(ds,{...cond(0,"product_name",nm+"%","like"),...cond(1,"quarter",quarter,"="),
+        "properties[0]":"state","properties[1]":"labeler_code","properties[2]":"number_of_prescriptions","properties[3]":"ndc","limit":500,"offset":off});
+      (j.results||[]).forEach(r=>{
+        const rx=+r.number_of_prescriptions; if(!rx||r.state==="XX") return;
+        const s=((agg[r.state]??={})); s[r.labeler_code]=(s[r.labeler_code]||0)+rx; ndcEx[r.labeler_code]??=r.ndc;
+      });
+      off+=500; if(!j.results||j.results.length<500||off>=(j.count||0)) break;
+    }
+  }
+  const out={ts:Date.now(),year,quarter,agg,ndcEx};
+  try{ localStorage.setItem(cacheKey,JSON.stringify(out)); }catch(e){}
+  return out;
+}
+function nationalRank(agg){ const t={}; Object.values(agg).forEach(s=>Object.entries(s).forEach(([l,v])=>t[l]=(t[l]||0)+v)); return Object.entries(t).sort((a,b)=>b[1]-a[1]); }
+async function initStates(){
+  if(ST.loadedFor===ST.drug) return;
+  const drug=ST.drug; ST.loadedFor=drug;
+  $("stStatus").textContent="Loading Medicaid data…"; $("stStatus").className="msg"; $("st-mfr").disabled=true;
+  renderStates();
+  try{
+    const d=await loadSdud(drug); if(ST.drug!==drug) return;
+    ST.data=d;
+    const rank=nationalRank(d.agg), co=d.agg[ST.state]?Object.entries(d.agg[ST.state]).sort((a,b)=>b[1]-a[1]):[];
+    ST.mfr=(co[0]||rank[0]||[""])[0];
+    $("st-mfr").innerHTML=rank.slice(0,20).map(([l])=>`<option value="${esc(l)}">${esc(labName(l))}</option>`).join("");
+    $("st-mfr").value=ST.mfr; $("st-mfr").disabled=false;
+    $("stStatus").textContent=`Medicaid prescriptions, ${d.year} Q${d.quarter} (latest available). ${SD_DRUGS[drug].note}`;
+  }catch(e){
+    ST.data=null; ST.loadedFor=null;
+    $("stStatus").innerHTML=`Couldn't load the Medicaid data right now. You can browse it directly at <a href="https://data.medicaid.gov/dataset/158a1baa-5506-400a-8ec3-97756f0b0536" target="_blank" rel="noopener">data.medicaid.gov</a>.`;
+    $("stStatus").className="msg err";
+  }
+  renderStates();
+}
+function renderStates(){
+  const d=ST.data;
+  $("stGrid").innerHTML=Array.from({length:8*11},(_,i)=>{
+    const g=GRID.find(x=>x[1]*11+x[2]===i); if(!g) return `<span></span>`;
+    const st=g[0], s=d?.agg[st], tot=s?Object.values(s).reduce((a,b)=>a+b,0):0, share=tot?(s[ST.mfr]||0)/tot:null;
+    const pct=share==null?"":Math.round(share*100)+"%";
+    const bg=share==null?"":`background-color:color-mix(in srgb,var(--accent) ${Math.round(share*100)}%,var(--chip));color:${share>.5?"var(--on-accent)":"var(--ink)"}`;
+    return `<button type="button" class="tile${share==null?" nodata":""}${ST.state===st?" sel":""}" data-st="${st}" style="grid-row:${g[1]+1};grid-column:${g[2]+1};${bg}" aria-label="${st}${pct?": "+pct+" "+labName(ST.mfr):": no data"}"><b>${st}</b><small>${pct}</small></button>`;
+  }).join("");
+  $("stLegendName").textContent=ST.mfr?"share of "+labName(ST.mfr):"";
+  const s=d?.agg[ST.state];
+  if(!d){ $("stDetail").innerHTML=""; return; }
+  if(!s){ $("stDetail").innerHTML=`<p class="empty-note">No reported prescriptions for ${ST.state} this quarter (small counts are hidden by Medicaid).</p>`; return; }
+  const tot=Object.values(s).reduce((a,b)=>a+b,0), rows=Object.entries(s).sort((a,b)=>b[1]-a[1]);
+  const top=rows.slice(0,8), other=rows.slice(8).reduce((a,[,v])=>a+v,0);
+  $("stDetail").innerHTML=`<h3 style="font-size:17px">${ST.state}: ${tot.toLocaleString()} prescriptions</h3>
+    <div class="st-bars">${top.map(([l,v])=>`<span class="nm">${esc(labName(l))}</span><div class="bar"><i style="width:${v/tot*100}%"></i></div><span class="v">${Math.round(v/tot*100)}% · ${v.toLocaleString()}</span>`).join("")}
+    ${other?`<span class="nm">Others</span><div class="bar"><i style="width:${other/tot*100}%;--c:var(--muted)"></i></div><span class="v">${Math.round(other/tot*100)}% · ${other.toLocaleString()}</span>`:""}</div>
+    <p class="msg">Tap a state to see its breakdown. Names come from the FDA labeler code in each NDC. Repackagers relabel other companies' pills.</p>`;
+}
+$("stGrid").addEventListener("click",e=>{ const t=e.target.closest("[data-st]"); if(!t) return; ST.state=t.dataset.st; renderStates(); });
+$("st-mfr").addEventListener("change",()=>{ ST.mfr=$("st-mfr").value; renderStates(); });
+$("st-drug").addEventListener("change",()=>{ ST.drug=$("st-drug").value; ST.data=null; initStates(); });
+
 let started=false;
 function startApp(user){
   if(started) return; started=true;
@@ -1033,6 +1358,7 @@ function startApp(user){
   $("demoBanner").hidden=!demoMode; $("signOutBtn").textContent=demoMode?"Exit demo":"Sign out";
   setStatus(false,demoMode?"Demo mode":"Loading your logs…");
   db=demoMode?memDB(demoData()):supaDB(user.id);
+  currentUser=user; favs=demoMode?[]:((user?.user_metadata?.favPharmacies)||[]);
   if(demoMode) setStatus(true,"Demo mode: nothing is saved");
   let first=true;
   db.collection("fills").onSnapshot(snap=>{
@@ -1050,7 +1376,7 @@ function startApp(user){
   });
 }
 function showSignIn(){
-  started=false; db=null; entries=[];
+  started=false; db=null; entries=[]; favs=[]; currentUser=null; if(typeof showTab==="function") showTab("log");
   $("app").hidden=true; $("authCard").hidden=false; $("signOutBtn").hidden=true;
   setStatus(false,"Signed out");
 }
